@@ -321,6 +321,11 @@ container startup, so database credentials are not stored in image layers.
 CI runs the unit tests in the builder stage and uses the slim runtime stage
 only for service startup and endpoint checks.
 
+Docker source dependencies are pinned to reviewed tags and commits for
+reproducible builds. Upgrade them deliberately in `Dockerfile`, run the CI
+matrix, and review the resulting dependency changes. Dependabot continues to
+update base images, Docker dependencies, and GitHub Actions where supported.
+
 ## CI integration smoke test
 
 GitHub Actions runs the user-service image with PostgreSQL and Redis using the
