@@ -189,16 +189,16 @@ void registerRoutes() {
 
 void dropTables() {}
 
-void runServer() {
+void runServer(const Json::Value &config) {
   // Set log level
   drogon::app().setLogLevel(trantor::Logger::kTrace);
   int32_t port = 8000;
   // Set HTTP listener address and port
   drogon::app().addListener("0.0.0.0", port);
 
-  // Load config file
+  // Load Drogon configuration directly from the values loaded from .env.
   try {
-    drogon::app().loadConfigFile("config.json");
+    drogon::app().loadConfigJson(config);
     drogon::app().setDocumentRoot("./docs");
   } catch (const exception &e) {
     cerr << "Exception caught: " << typeid(e).name() << " - " << e.what()
@@ -235,7 +235,7 @@ map<string, string> loadEnvVariables(const string &filename) {
   return envVariables;
 }
 
-void generateConfigFile() {
+Json::Value generateConfig() {
   // Load environment variables from .env file
   map<string, string> envVariables = loadEnvVariables(".env");
 
@@ -268,27 +268,18 @@ void generateConfigFile() {
   // Add the database client object to the array
   dbClients.append(dbClient);
 
-  // Generate the JSON string
-  Json::StreamWriterBuilder writer;
-  writer["indentation"] = "    "; // 4 spaces for indentation
-  string jsonString = Json::writeString(writer, config);
-
-  // Write the JSON string to a file
-  ofstream outputFile("config.json");
-  outputFile << jsonString;
-  outputFile.close();
-
-  cout << "Configuration file generated successfully." << endl;
+  return config;
 }
 
 int main(int argc, char *argv[]) {
+  Json::Value config;
   try {
     // CLion commonly launches the binary from build/, while the development
     // configuration lives in the project root. Use the .env directory as the
-    // process working directory so config.json and docs resolve consistently.
+    // process working directory so docs resolve consistently.
     const auto envFile = findEnvFile();
     std::filesystem::current_path(envFile.parent_path());
-    generateConfigFile();
+    config = generateConfig();
   } catch (const exception &e) {
     cerr << "Unable to initialize configuration: " << e.what() << endl;
     return 1;
@@ -317,8 +308,6 @@ int main(int argc, char *argv[]) {
 
   // Database config to database cli interface
   map<string, string> envVariables = loadEnvVariables(".env");
-  Json::Value config;
-  string secretKey = envVariables["SECRET_KEY"];
   string dbHost = envVariables["DB_HOST"];
   string dbName = envVariables["DB_NAME"];
   string user = envVariables["DB_USER"];
@@ -329,7 +318,7 @@ int main(int argc, char *argv[]) {
   // Check the action and perform the corresponding operation
   if (key == "--action") {
     if (value == "run-server") {
-      runServer();
+      runServer(config);
     } else if (value == "create-tables") {
       createTables(connectionString);
     } else if (value == "drop-tables") {
