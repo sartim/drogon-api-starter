@@ -48,6 +48,17 @@ jobs:
       - name: Run integration smoke tests
         run: ./scripts/integration_smoke.sh
 
+      - name: Stop Redis and verify cache fallback
+        run: |
+          docker compose stop redis
+          ./scripts/integration_degradation.sh
+
+      - name: Stop PostgreSQL and verify readiness failure
+        run: |
+          docker compose stop postgres
+          EXPECTED_READY_STATUS=503 READINESS_ONLY=true \
+            ./scripts/integration_degradation.sh
+
       - name: Stop integration stack
         if: always()
         run: docker compose down --volumes --remove-orphans
