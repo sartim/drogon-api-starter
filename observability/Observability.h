@@ -22,7 +22,8 @@ private:
 };
 
 std::string requestId(const drogon::HttpRequestPtr& request);
-void configure(const std::string& sentryDsn = {});
+void configure(const std::string& provider = {},
+               const std::string& sentryDsn = {});
 Metrics& metrics();
 
 } // namespace observability

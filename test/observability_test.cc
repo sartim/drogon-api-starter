@@ -1,8 +1,10 @@
 #include "observability/Observability.h"
+#include "observability/ErrorReporter.h"
 
 #include <drogon/HttpRequest.h>
 
 #include <iostream>
+#include <stdexcept>
 
 int main() {
   auto request = drogon::HttpRequest::newHttpRequest();
@@ -19,6 +21,17 @@ int main() {
   if (metrics.find("http_requests_total") == std::string::npos) {
     std::cerr << "request metric is missing\n";
     return 1;
+  }
+
+  observability::configureErrorReporter("none");
+  if (observability::errorReporter().provider() != "none") {
+    std::cerr << "default error reporter is not the no-op provider\n";
+    return 1;
+  }
+  try {
+    throw std::runtime_error("test error");
+  } catch (const std::exception& error) {
+    observability::captureException(error, "test-request-id");
   }
 
   return 0;

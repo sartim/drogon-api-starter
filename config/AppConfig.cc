@@ -101,6 +101,9 @@ AppConfig AppConfig::fromValues(const std::map<std::string, std::string>& values
   config.dbUser = required(values, "DB_USER");
   config.dbPassword = values.count("DB_PASSWORD") ? values.at("DB_PASSWORD") : "";
   config.sentryDsn = values.count("SENTRY_DSN") ? values.at("SENTRY_DSN") : "";
+  config.errorTrackingProvider = values.count("ERROR_TRACKING_PROVIDER")
+                                     ? values.at("ERROR_TRACKING_PROVIDER")
+                                     : "none";
   config.httpHost = values.count("HTTP_HOST") ? values.at("HTTP_HOST") : "0.0.0.0";
   config.httpPort = number(values, "HTTP_PORT", 8000);
   config.redisEnabled = flag(values, "REDIS_ENABLED", false);
@@ -121,7 +124,8 @@ AppConfig AppConfig::fromValues(const std::map<std::string, std::string>& values
 AppConfig AppConfig::load(const std::filesystem::path& envFile) {
   auto values = readEnvFile(envFile);
   for (const auto& key : {"SECRET_KEY", "DB_HOST", "DB_PORT", "DB_NAME",
-                          "DB_USER", "DB_PASSWORD", "SENTRY_DSN", "HTTP_HOST",
+                          "DB_USER", "DB_PASSWORD", "SENTRY_DSN",
+                          "ERROR_TRACKING_PROVIDER", "HTTP_HOST",
                           "HTTP_PORT", "REDIS_ENABLED", "REDIS_HOST", "REDIS_PORT",
                           "REDIS_PASSWORD", "REDIS_DB"}) {
     overrideFromEnvironment(values, key);
