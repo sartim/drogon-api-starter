@@ -91,6 +91,11 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 CMakeUserPresets.json
+build/
+.local/
+Bcrypt.cpp/
+drogon/
+jwt-cpp/
 
 ### CMake Patch ###
 # External projects

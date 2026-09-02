@@ -1,0 +1,40 @@
+name: Build, test, and health check
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+jobs:
+  docker:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build --tag user-service:ci .
+
+      - name: Run unit tests
+        run: docker run --rm user-service:ci ctest --test-dir build --output-on-failure
+
+      - name: Start service
+        run: docker run --detach --name user-service-ci --publish 8000:8000 user-service:ci
+
+      - name: Wait for health endpoint
+        run: |
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8000/health; then
+              echo
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs user-service-ci
+          exit 1
+
+      - name: Stop service
+        if: always()
+        run: docker rm --force user-service-ci || true

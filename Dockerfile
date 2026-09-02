@@ -23,7 +23,7 @@ ENV DB_PASSWORD=$DB_PASSWORD
 RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g; s|http://security.debian.org|https://security.debian.org|g' /etc/apt/sources.list.d/debian.sources && \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      cmake curl libjsoncpp-dev uuid-dev \
+      cmake pkg-config curl libjsoncpp-dev uuid-dev libpqxx-dev \
       libssl-dev zlib1g-dev libbz2-dev liblzma-dev libpq-dev && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
@@ -55,11 +55,14 @@ RUN chmod +x scripts -R
 RUN ./scripts/create_dot_env.sh
 RUN ./scripts/create_model_json.sh
 
-# Build app
-RUN cmake . && make && chmod +x drogon_user_service
+# Build app out of source so build artifacts stay isolated and CTest can use
+# the standard build directory.
+RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build build --parallel && \
+    chmod +x build/drogon_user_service
 
 # Expose port 8000 for the app
 EXPOSE 8000
 
 # Start the app
-CMD ["./drogon_user_service", "--action=run-server"]
+CMD ["./build/drogon_user_service", "--action=run-server"]

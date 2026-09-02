@@ -9,7 +9,7 @@ if ! command -v brew >/dev/null 2>&1; then
   exit 1
 fi
 
-brew install drogon libpqxx openssl@3 postgresql@16
+brew install jsoncpp libpqxx openssl@3 postgresql@16
 
 if [[ ! -d Bcrypt.cpp ]]; then
   git clone --depth 1 https://github.com/hilch/Bcrypt.cpp.git Bcrypt.cpp
@@ -20,6 +20,19 @@ if [[ ! -d jwt-cpp ]]; then
 fi
 
 jwt_install_dir="$project_dir/.local"
+export PKG_CONFIG_PATH="$(brew --prefix libpqxx)/lib/pkgconfig:$(brew --prefix libpq)/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+
+if [[ ! -d drogon ]]; then
+  git clone --depth 1 --recurse-submodules https://github.com/drogonframework/drogon.git drogon
+fi
+
+cmake -S drogon -B drogon/build -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_INSTALL_PREFIX="$jwt_install_dir" \
+  -DBUILD_POSTGRESQL=ON -DBUILD_MYSQL=OFF -DBUILD_SQLITE=OFF \
+  -DBUILD_EXAMPLES=OFF -DBUILD_CTL=OFF
+cmake --build drogon/build --parallel
+cmake --install drogon/build
+
 cmake -S jwt-cpp -B jwt-cpp/build -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX="$jwt_install_dir"
 cmake --build jwt-cpp/build --parallel
@@ -41,9 +54,9 @@ fi
 brew services start postgresql@16 >/dev/null || true
 "$(brew --prefix postgresql@16)/bin/createdb" drogon_user_service 2>/dev/null || true
 
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug \
+cmake --fresh -S . -B build -DCMAKE_BUILD_TYPE=Debug \
   -DOPENSSL_ROOT_DIR="$(brew --prefix openssl@3)" \
-  -DCMAKE_PREFIX_PATH="$(brew --prefix drogon);$(brew --prefix libpqxx);$jwt_install_dir"
+  -DCMAKE_PREFIX_PATH="$(brew --prefix libpqxx);$jwt_install_dir"
 cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 

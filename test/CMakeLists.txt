@@ -1,4 +1,5 @@
-add_executable(drogon_user_service_test test_main.cc)
+add_executable(drogon_user_service_test test_main.cc
+               ${CMAKE_SOURCE_DIR}/schemas/AuthSchema.cc)
 
 target_include_directories(drogon_user_service_test
                            PRIVATE ${CMAKE_SOURCE_DIR})

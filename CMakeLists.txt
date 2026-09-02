@@ -1,5 +1,3 @@
-include(FetchContent)
-
 cmake_minimum_required(VERSION 3.16)
 project(drogon_user_service CXX)
 
@@ -94,7 +92,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${OPENSSL_INCLUDE_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${OPENSSL_LIBRARIES})
 
 find_package(jwt-cpp REQUIRED)
-target_include_directories(${PROJECT_NAME} PRIVATE jwt-cpp)
+target_link_libraries(${PROJECT_NAME} PRIVATE jwt-cpp::jwt-cpp)
 
 #find_package(AWSSDK CONFIG COMPONENTS core dynamodb kinesis s3 REQUIRED)
 #target_include_directories(${PROJECT_NAME} PRIVATE ${AWSSDK_INCLUDE_DIRS})
@@ -105,11 +103,6 @@ target_include_directories(bcrypt PRIVATE Bcrypt.cpp/src/)
 target_include_directories(bcrypt PUBLIC Bcrypt.cpp/include/)
 target_link_libraries(${PROJECT_NAME} PRIVATE bcrypt)
 
-FetchContent_Declare(
-  libpqxx
-  GIT_REPOSITORY https://github.com/jtv/libpqxx.git
-  GIT_TAG a6b1d60e74c1427c8ac2324b85cd4a0dc2068332
-)
-set(PQXX_LIBRARIES pqxx_static)
-FetchContent_MakeAvailable(libpqxx)
-target_link_libraries(${PROJECT_NAME} PRIVATE "${PQXX_LIBRARIES}")
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(PQXX REQUIRED IMPORTED_TARGET libpqxx)
+target_link_libraries(${PROJECT_NAME} PRIVATE PkgConfig::PQXX)
