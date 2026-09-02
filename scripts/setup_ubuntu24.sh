@@ -42,7 +42,7 @@ cmake -S drogon -B drogon/build -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX="$local_prefix" \
   -DBUILD_POSTGRESQL=ON -DBUILD_MYSQL=OFF -DBUILD_SQLITE=OFF \
   -DBUILD_REDIS=ON \
-  -DBUILD_EXAMPLES=OFF -DBUILD_CTL=OFF
+  -DBUILD_EXAMPLES=OFF -DBUILD_CTL=ON
 cmake --build drogon/build --parallel
 cmake --install drogon/build
 

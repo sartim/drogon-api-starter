@@ -36,6 +36,23 @@ capabilities without changing the generator contract. CI runs a generator
 contract test for both profiles and compares the minimal output with its
 checked-in golden templates.
 
+## Generate Drogon components
+
+After installing `drogon_ctl` (the native setup scripts build it automatically),
+use the wrapper to keep generated components in
+the starter layout. It delegates generation to Drogon and does not require any
+project database or Docker services:
+
+```sh
+./scripts/drogon-generate controller UserController --output app/controllers
+./scripts/drogon-generate filter AuthFilter --output app/filters
+./scripts/drogon-generate model schemas/users.json --output models
+```
+
+Set `DROGON_CTL=/path/to/drogon_ctl` when the executable is not on `PATH`. The
+wrapper also supports `plugin` and `view`; use `--` to pass additional native
+`drogon_ctl` flags.
+
 ## Supported starter profiles
 
 The repository provides batteries-included profiles without forcing every

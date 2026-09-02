@@ -42,4 +42,18 @@ for directory in platform examples migrations deploy; do
 done
 assert_no_placeholders "$users"
 
+if command -v drogon_ctl >/dev/null 2>&1; then
+  components="$temporary_root/components"
+  mkdir -p "$components"
+  "$project_root/scripts/drogon-generate" controller TestController \
+    --output "$components/controllers"
+  "$project_root/scripts/drogon-generate" filter TestFilter \
+    --output "$components/filters"
+  assert_file "$components/controllers/TestController.h"
+  assert_file "$components/controllers/TestController.cc"
+  assert_file "$components/filters/TestFilter.h"
+  assert_file "$components/filters/TestFilter.cc"
+  echo "drogon_ctl component generation passed."
+fi
+
 echo "Generated minimal and user-service profiles match the starter layout."

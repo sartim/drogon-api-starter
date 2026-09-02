@@ -22,7 +22,7 @@ RUN git clone --depth 1 --branch ${DROGON_TAG} --recurse-submodules https://gith
     cmake -S /tmp/drogon -B /tmp/drogon/build \
       -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_POSTGRESQL=ON -DBUILD_REDIS=ON -DBUILD_MYSQL=OFF -DBUILD_SQLITE=OFF \
-      -DBUILD_EXAMPLES=OFF -DBUILD_CTL=OFF && \
+      -DBUILD_EXAMPLES=OFF -DBUILD_CTL=ON && \
     cmake --build /tmp/drogon/build --parallel && \
     cmake --install /tmp/drogon/build
 
