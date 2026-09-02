@@ -63,6 +63,7 @@ EOF
 fi
 
 cmake --fresh -S . -B build -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
   -DCMAKE_PREFIX_PATH="$local_prefix"
 cmake --build build --parallel
 ctest --test-dir build --output-on-failure

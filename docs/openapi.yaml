@@ -1,0 +1,178 @@
+openapi: 3.0.3
+info:
+  title: Drogon User Service API
+  version: 0.1.0
+  description: User and role management API.
+servers:
+  - url: http://localhost:8000
+paths:
+  /health:
+    get:
+      summary: Check service liveness
+      security: []
+      responses:
+        '200':
+          description: Service is running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /api/v1/generate-jwt:
+    post:
+      summary: Generate a JWT for valid credentials
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: JWT generated
+        '400':
+          description: Invalid request
+        '401':
+          description: Invalid credentials
+  /api/v1/user:
+    get:
+      summary: List users
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Users returned
+        '401':
+          description: Authentication required
+    post:
+      summary: Create a user
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: User created
+  /api/v1/user/{id}:
+    get:
+      summary: Get a user
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: User returned
+        '404':
+          description: User not found
+    put:
+      summary: Update a user
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: User updated
+    delete:
+      summary: Delete a user
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '204':
+          description: User deleted
+  /api/v1/role:
+    get:
+      summary: List roles
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Roles returned
+    post:
+      summary: Create a role
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Role created
+  /api/v1/role/{id}:
+    get:
+      summary: Get a role
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Role returned
+        '404':
+          description: Role not found
+    put:
+      summary: Update a role
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Role updated
+    delete:
+      summary: Delete a role
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '204':
+          description: Role deleted
+components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 25
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          example: up
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

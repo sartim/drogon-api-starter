@@ -56,6 +56,14 @@ void registerRoutes() {
   drogon::app().registerHandler("/health", healthHandler, {Get});
   drogon::app().registerHandler("/", healthHandler, {Get});
 
+  drogon::app().registerHandler(
+      "/docs",
+      [](const HttpRequestPtr &,
+         function<void(const HttpResponsePtr &)> &&callback) {
+        callback(HttpResponse::newRedirectionResponse("/swagger.html"));
+      },
+      {Get});
+
   // Register generate jwt token
   auto authController = make_shared<AuthController>();
   drogon::app().registerHandler(
@@ -152,6 +160,7 @@ void runServer() {
   // Load config file
   try {
     drogon::app().loadConfigFile("config.json");
+    drogon::app().setDocumentRoot("./docs");
   } catch (const exception &e) {
     cerr << "Exception caught: " << typeid(e).name() << " - " << e.what()
          << endl;

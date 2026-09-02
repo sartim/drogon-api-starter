@@ -45,6 +45,69 @@ To run only the test binary with verbose DrogonTest output:
 
     $ ./build/test/drogon_user_service_test
 
+## Database migrations and seeding
+
+Database structure is managed with ordered SQL migrations in
+`db/migrations/`. Each migration is applied once and recorded in the
+`schema_migrations` table. Migrations run with `ON_ERROR_STOP` and each file is
+applied in a transaction, so a failed migration is not recorded as complete:
+
+    $ ./scripts/migrate.sh
+
+Reference data is kept separately in `db/seeds/` and is safe to run repeatedly
+because inserts use conflict handling:
+
+    $ ./scripts/seed.sh
+
+Run migrations before seeding. Never edit an already-applied migration; add a
+new numbered migration instead. Production migrations should run as a
+deployment step using a database role that can migrate but is separate from
+the application runtime role.
+
+The old `--action=create-tables` command is retained for compatibility but new
+environments should use `./scripts/migrate.sh`.
+
+## API documentation
+
+The OpenAPI specification is in `docs/openapi.yaml` and Swagger UI is served
+by the application at:
+
+    http://localhost:8000/docs
+
+The raw specification is available at:
+
+    http://localhost:8000/openapi.yaml
+
+The Swagger page loads its UI assets from the public Swagger UI CDN. For an
+offline or production deployment, vendor those assets or serve Swagger UI
+behind the deployment's static asset pipeline.
+
+## Formatting and linting
+
+Install the tools with Homebrew on macOS:
+
+    $ brew install clang-format llvm
+
+On Ubuntu 24.04:
+
+    $ sudo apt-get install clang-format clang-tidy
+
+Format tracked C++ files in place:
+
+    $ ./scripts/format.sh
+
+Check formatting without changing files:
+
+    $ ./scripts/format_check.sh
+
+Run clang-tidy after configuring the project with compile commands enabled:
+
+    $ ./scripts/lint.sh
+
+The setup scripts enable `compile_commands.json` automatically. Formatting and
+linting should be run before opening a pull request; CI remains responsible
+for the Docker build, unit tests, and health-check integration test.
+
 The unit tests do not require PostgreSQL or a running API server. The server
 is started separately with `./build/drogon_user_service --action=run-server`.
 
@@ -103,14 +166,6 @@ On the project root:
     $ cmake ..
     $ make
     $ ./drogoncore_user_service --action=run-server
-
-# Create tables
-
-    $ ./drogon_user_service --action=create-tables
-
-# Drop tables
-
-    $ ./drogon_user_service --action=drop-tables
 
 ## Running with docker
     

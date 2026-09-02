@@ -55,6 +55,7 @@ brew services start postgresql@16 >/dev/null || true
 "$(brew --prefix postgresql@16)/bin/createdb" drogon_user_service 2>/dev/null || true
 
 cmake --fresh -S . -B build -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
   -DOPENSSL_ROOT_DIR="$(brew --prefix openssl@3)" \
   -DCMAKE_PREFIX_PATH="$(brew --prefix libpqxx);$jwt_install_dir"
 cmake --build build --parallel
