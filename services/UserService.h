@@ -18,6 +18,11 @@ class UserService {
       int page, int pageSize) const;
   std::optional<drogon_model::drogon_user_service::Users> findById(
       const std::string& id) const;
+  drogon_model::drogon_user_service::Users createUser(
+      const Json::Value& input) const;
+  drogon_model::drogon_user_service::Users updateUser(
+      const std::string& id, const Json::Value& input) const;
+  bool deleteUser(const std::string& id) const;
 
   // Convert a persistence model to the public API representation.
   // Passwords and internal flags are intentionally excluded.

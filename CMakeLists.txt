@@ -104,6 +104,10 @@ target_sources(${PROJECT_NAME}
 
 # ##############################################################################
 
+add_library(bcrypt Bcrypt.cpp/src/bcrypt.cpp Bcrypt.cpp/src/blowfish.cpp)
+target_include_directories(bcrypt PRIVATE Bcrypt.cpp/src/)
+target_include_directories(bcrypt PUBLIC Bcrypt.cpp/include/)
+
 add_subdirectory(test)
 
 find_package(OpenSSL REQUIRED)
@@ -122,9 +126,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE jwt-cpp::jwt-cpp)
 #target_include_directories(${PROJECT_NAME} PRIVATE ${AWSSDK_INCLUDE_DIRS})
 #target_link_libraries(${PROJECT_NAME} PRIVATE ${AWSSDK_LIBRARIES})
 
-add_library(bcrypt Bcrypt.cpp/src/bcrypt.cpp Bcrypt.cpp/src/blowfish.cpp)
-target_include_directories(bcrypt PRIVATE Bcrypt.cpp/src/)
-target_include_directories(bcrypt PUBLIC Bcrypt.cpp/include/)
 target_link_libraries(${PROJECT_NAME} PRIVATE bcrypt)
 
 find_package(PkgConfig REQUIRED)
