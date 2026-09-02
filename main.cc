@@ -43,16 +43,18 @@ void createTables(const string &connectionString) {
 }
 
 void registerRoutes() {
-  // Register root route
-  drogon::app().registerHandler(
-      "/", [](const HttpRequestPtr &req,
-              function<void(const HttpResponsePtr &)> &&callback) {
-        // Return response
-        Json::Value response;
-        response["status"] = "up";
-        HttpResponsePtr resp = HttpResponse::newHttpJsonResponse(response);
-        callback(resp);
-      });
+  auto healthHandler = [](const HttpRequestPtr &req,
+                          function<void(const HttpResponsePtr &)> &&callback) {
+    Json::Value response;
+    response["status"] = "up";
+    callback(HttpResponse::newHttpJsonResponse(response));
+  };
+
+  // Application-level liveness endpoint. It intentionally does not require
+  // the database so orchestration can distinguish process health from DB
+  // readiness.
+  drogon::app().registerHandler("/health", healthHandler, {Get});
+  drogon::app().registerHandler("/", healthHandler, {Get});
 
   // Register generate jwt token
   auto authController = make_shared<AuthController>();
@@ -149,7 +151,7 @@ void runServer() {
 
   // Load config file
   try {
-    drogon::app().loadConfigFile("../config.json");
+    drogon::app().loadConfigFile("config.json");
   } catch (const exception &e) {
     cerr << "Exception caught: " << typeid(e).name() << " - " << e.what()
          << endl;

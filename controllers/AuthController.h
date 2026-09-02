@@ -11,6 +11,6 @@ public:
       const HttpRequestPtr &req,
       function<void(const HttpResponsePtr &)> &&callback) override;
   PATH_LIST_BEGIN
-  PATH_ADD("/api/v1/auth/generate-jwt", Post);
+  PATH_ADD("/api/v1/generate-jwt", Post);
   PATH_LIST_END
 };

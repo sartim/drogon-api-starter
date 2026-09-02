@@ -1,14 +1,8 @@
-cmake_minimum_required(VERSION 3.5)
-project(drogoncore_user_service_test CXX)
+add_executable(drogon_user_service_test test_main.cc
+               ${CMAKE_SOURCE_DIR}/schemas/AuthSchema.cc)
 
-add_executable(${PROJECT_NAME} test_main.cc)
+target_include_directories(drogon_user_service_test
+                           PRIVATE ${CMAKE_SOURCE_DIR})
+target_link_libraries(drogon_user_service_test PRIVATE Drogon::Drogon)
 
-# ##############################################################################
-# If you include the drogon source code locally in your project, use this method
-# to add drogon 
-# target_link_libraries(${PROJECT_NAME}_test PRIVATE drogon)
-#
-# and comment out the following lines
-target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon)
-
-ParseAndAddDrogonTests(${PROJECT_NAME})
+ParseAndAddDrogonTests(drogon_user_service_test)

@@ -1,10 +1,29 @@
 #define DROGON_TEST_MAIN
 #include <drogon/drogon_test.h>
 #include <drogon/drogon.h>
+#include "schemas/AuthSchema.h"
 
 DROGON_TEST(BasicTest)
 {
-    // Add your tests here
+    CHECK(1 + 1 == 2);
+}
+
+DROGON_TEST(AuthSchemaAcceptsValidCredentials)
+{
+    AuthSchema schema;
+    Json::Value body;
+    body["email"] = "user@example.com";
+    body["password"] = "correct horse battery staple";
+
+    CHECK(schema.validate(body).empty());
+}
+
+DROGON_TEST(AuthSchemaReportsMissingFields)
+{
+    AuthSchema schema;
+    const auto errors = schema.validate(Json::Value(Json::objectValue));
+
+    CHECK(errors.size() == 2);
 }
 
 int main(int argc, char** argv) 

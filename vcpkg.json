@@ -3,8 +3,11 @@
   "version-string" : "1.0.0",
   "builtin-baseline" : "b3e0a1e625a0cc00073efb763e39088e5b75939e",
   "dependencies" : [ {
-    "name" : "aws-sdk-cpp",
-    "version>=" : "1.11.4"
+    "name" : "drogon"
+  }, {
+    "name" : "libpqxx"
+  }, {
+    "name" : "jsoncpp"
   }, {
     "name" : "jwt-cpp",
     "version>=" : "0.6.0"

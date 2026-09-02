@@ -22,6 +22,14 @@ void AuthController::asyncHandleHttpRequest(
   auto client = drogon::app().getDbClient();
   if (client) {
     auto jsonBody = req->getJsonObject();
+    if (!jsonBody || !(*jsonBody)["email"].isString() ||
+        !(*jsonBody)["password"].isString()) {
+      Json::Value error;
+      error["error"] = "Request body must contain email and password";
+      callback(handleResponse(error, k400BadRequest));
+      return;
+    }
+
     auto email = (*jsonBody)["email"].asString();
     auto password = (*jsonBody)["password"].asString();
 
@@ -42,6 +50,7 @@ void AuthController::asyncHandleHttpRequest(
           shared_ptr<HttpResponse> resp =
               handleResponse(error, k401Unauthorized);
           callback(resp);
+          return;
         }
         Json::Value userJson;
         userJson["id"] = user.getValueOfId();
@@ -53,8 +62,6 @@ void AuthController::asyncHandleHttpRequest(
         // Generate token for user found here and return as json
         const string secretKey = getEnv("SECRET_KEY");
         string access = generateJWT(secretKey, email);
-        string refresh = generateJWT(secretKey, email);
-
         Json::Value response;
         response["access"] = access;
         response["user"] = usersJson;

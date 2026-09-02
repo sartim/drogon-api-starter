@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 AS build-env
+FROM buildpack-deps:bookworm AS build-env
 
 # Set the timezone
 ENV TZ=America/New_York
@@ -19,13 +19,13 @@ ENV DB_NAME=$DB_NAME
 ENV DB_USER=$DB_USER
 ENV DB_PASSWORD=$DB_PASSWORD
 
-# Update and install necessary packages
-RUN apt-get update
-RUN apt-get install -y redis-server libhiredis-dev git
-RUN apt-get install -y cmake g++ gcc libjsoncpp-dev uuid-dev openssl
-RUN apt-get install -y libssl-dev zlib1g-dev libbz2-dev liblzma-dev
-RUN apt-get install -y postgresql postgresql-contrib postgresql-all
-RUN apt clean && rm -rf /var/lib/apt/lists/*
+# Update and install only build/runtime dependencies used by this service.
+RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g; s|http://security.debian.org|https://security.debian.org|g' /etc/apt/sources.list.d/debian.sources && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      cmake pkg-config curl libjsoncpp-dev uuid-dev libpqxx-dev \
+      libssl-dev zlib1g-dev libbz2-dev liblzma-dev libpq-dev && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Clone the Drogon repository
 RUN git clone https://github.com/drogonframework/drogon
@@ -55,11 +55,14 @@ RUN chmod +x scripts -R
 RUN ./scripts/create_dot_env.sh
 RUN ./scripts/create_model_json.sh
 
-# Build app
-RUN cmake . && make && chmod +x drogon_user_service
+# Build app out of source so build artifacts stay isolated and CTest can use
+# the standard build directory.
+RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build build --parallel && \
+    chmod +x build/drogon_user_service
 
 # Expose port 8000 for the app
 EXPOSE 8000
 
 # Start the app
-CMD ["./drogon_user_service", "--action=run-server"]
+CMD ["./build/drogon_user_service", "--action=run-server"]
