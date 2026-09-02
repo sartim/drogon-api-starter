@@ -6,6 +6,9 @@
 User service running on Drogon Framework which handles RBAC management. Make
 sure to create a `.env` file from `.env.example`.
 
+The implementation plan and milestone status are tracked in
+[ROADMAP.md](ROADMAP.md).
+
 ## Requirements
 
 * [Drogon](https://github.com/drogonframework/drogon)
