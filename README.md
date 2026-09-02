@@ -91,6 +91,31 @@ The Swagger page loads its UI assets from the public Swagger UI CDN. For an
 offline or production deployment, vendor those assets or serve Swagger UI
 behind the deployment's static asset pipeline.
 
+## Observability
+
+The service exposes a Prometheus-compatible metrics endpoint at
+`GET /metrics`. It records aggregate request, response, and HTTP 5xx counters
+without adding path or user labels that could create high-cardinality metrics.
+
+Each request receives an `X-Request-ID` response header. An incoming
+`X-Request-ID` is preserved; otherwise the service generates one. Request
+start/completion logs include the ID, method, path, and response status, which
+provides a lightweight trace across application logs.
+
+Sentry is optional. If `SENTRY_DSN` is not set, the service logs that Sentry is
+disabled and continues normally. A DSN is detected for future error-tracking
+integration, but this build does not require or link the Sentry SDK:
+
+    $ export SENTRY_DSN="https://examplePublicKey@o0.ingest.sentry.io/0"
+
+Alternatively, add the value to a local `.env` copied from `.env.example`.
+Leave `SENTRY_DSN` empty when Sentry is not available.
+
+Keep the DSN in the deployment secret store rather than committing it to
+`.env` or source control. The current error-tracking hook is intentionally
+fail-open; integrating the Sentry SDK can be added once the deployment
+environment provides the required credentials and transport policy.
+
 ## Formatting and linting
 
 Install the tools with Homebrew on macOS:
