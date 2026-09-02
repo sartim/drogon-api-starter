@@ -29,6 +29,23 @@ jobs:
       - name: Build user-service runtime profile
         run: docker build --build-arg ENABLE_USER_SERVICE=ON --tag user-service:ci-user .
 
+      - name: Start integration stack
+        run: |
+          docker tag user-service:ci-user user_service:latest
+          SECRET_KEY=ci-test-secret \
+            DB_NAME=ci-test \
+            DB_USER=ci-test \
+            DB_PASSWORD= \
+            REDIS_ENABLED=true \
+            docker compose up --detach --no-build
+
+      - name: Run integration smoke tests
+        run: ./scripts/integration_smoke.sh
+
+      - name: Stop integration stack
+        if: always()
+        run: docker compose down --volumes --remove-orphans
+
       - name: Start service
         run: |
           docker run --detach --name user-service-ci --publish 8000:8000 \

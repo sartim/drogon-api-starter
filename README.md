@@ -310,3 +310,18 @@ runtime libraries, and API documentation. Configuration is supplied at
 container startup, so database credentials are not stored in image layers.
 CI runs the unit tests in the builder stage and uses the slim runtime stage
 only for service startup and endpoint checks.
+
+## CI integration smoke test
+
+GitHub Actions runs the user-service image with PostgreSQL and Redis using the
+Compose stack. The integration smoke test validates migrations through the
+one-shot migration service, database readiness, documentation, metrics, and
+that protected user and role endpoints reject unauthenticated requests.
+
+To run the endpoint checks against an already-running stack:
+
+    $ ./scripts/integration_smoke.sh
+
+The script does not build images or start containers, so local Docker remains
+optional. Full authentication and CRUD integration coverage will be added
+after a dedicated test-user fixture is introduced.
