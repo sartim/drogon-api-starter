@@ -9,6 +9,7 @@
 #include "tables/UserTable.h"
 #include <drogon/HttpAppFramework.h>
 #include <fstream>
+#include <filesystem>
 #include <iostream>
 #include <map>
 #include <sstream>
@@ -18,6 +19,26 @@ using namespace std;
 using namespace drogon;
 using namespace drogon::orm;
 using namespace drogon_model::drogon_user_service;
+
+namespace {
+std::filesystem::path findEnvFile() {
+  const auto currentDirectory = std::filesystem::current_path();
+  const std::filesystem::path candidates[] = {
+      currentDirectory / ".env",
+      currentDirectory.parent_path() / ".env",
+  };
+
+  for (const auto &candidate : candidates) {
+    if (std::filesystem::is_regular_file(candidate)) {
+      return candidate;
+    }
+  }
+
+  throw runtime_error("Failed to find .env in " +
+                      (currentDirectory / ".env").string() + " or " +
+                      (currentDirectory.parent_path() / ".env").string());
+}
+} // namespace
 
 
 void createTables(const string &connectionString) {
@@ -261,9 +282,17 @@ void generateConfigFile() {
 }
 
 int main(int argc, char *argv[]) {
-
-  // Generate config file from .env
-  generateConfigFile();
+  try {
+    // CLion commonly launches the binary from build/, while the development
+    // configuration lives in the project root. Use the .env directory as the
+    // process working directory so config.json and docs resolve consistently.
+    const auto envFile = findEnvFile();
+    std::filesystem::current_path(envFile.parent_path());
+    generateConfigFile();
+  } catch (const exception &e) {
+    cerr << "Unable to initialize configuration: " << e.what() << endl;
+    return 1;
+  }
 
   // Check if the correct number of command-line arguments is provided
   if (argc != 2) {
