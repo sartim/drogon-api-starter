@@ -1,0 +1,55 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: drogon-api-starter-migrations
+  labels:
+    app.kubernetes.io/name: drogon-api-starter
+    app.kubernetes.io/component: migration
+spec:
+  backoffLimit: 4
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: drogon-api-starter
+        app.kubernetes.io/component: migration
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: postgres:16-alpine
+          envFrom:
+            - configMapRef:
+                name: drogon-api-starter-config
+            - secretRef:
+                name: drogon-api-starter-secrets
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              export PGPASSWORD="${DB_PASSWORD:-}"
+              psql_args="-h $DB_HOST -p ${DB_PORT:-5432} -U $DB_USER -d $DB_NAME"
+              until pg_isready -h "$DB_HOST" -p "${DB_PORT:-5432}" -U "$DB_USER" -d "$DB_NAME"; do
+                sleep 2
+              done
+              psql $psql_args --set ON_ERROR_STOP=1 <<'SQL'
+              CREATE TABLE IF NOT EXISTS public.schema_migrations (
+                  version TEXT PRIMARY KEY,
+                  applied_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+              );
+              SQL
+              for migration in /db/migrations/*.sql; do
+                version="$(basename "$migration" .sql)"
+                applied="$(psql $psql_args --tuples-only --no-align --set ON_ERROR_STOP=1 --command "SELECT 1 FROM public.schema_migrations WHERE version = '$version'")"
+                if [ "$applied" = "1" ]; then continue; fi
+                psql $psql_args --set ON_ERROR_STOP=1 --single-transaction --file "$migration"
+                psql $psql_args --set ON_ERROR_STOP=1 --command "INSERT INTO public.schema_migrations(version) VALUES ('$version')"
+              done
+          volumeMounts:
+            - name: migrations
+              mountPath: /db/migrations
+              readOnly: true
+      volumes:
+        - name: migrations
+          configMap:
+            name: drogon-api-starter-migrations
