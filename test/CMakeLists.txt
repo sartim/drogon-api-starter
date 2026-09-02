@@ -28,5 +28,5 @@ add_executable(user_service_test user_service_test.cc
                ${CMAKE_SOURCE_DIR}/services/UserService.cc
                ${CMAKE_SOURCE_DIR}/models/Users.cc)
 target_include_directories(user_service_test PRIVATE ${CMAKE_SOURCE_DIR})
-target_link_libraries(user_service_test PRIVATE Drogon::Drogon)
+target_link_libraries(user_service_test PRIVATE Drogon::Drogon bcrypt)
 add_test(NAME UserPublicProjection COMMAND user_service_test)

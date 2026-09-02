@@ -115,47 +115,19 @@ void UserController::createUser(
   connect(); // connect to db
 
   if (client) {
-    Mapper<Users> mp(client);
-
     auto jsonBody = req->getJsonObject();
-
-    if (jsonBody && (*jsonBody)["first_name"].isString() &&
-        (*jsonBody)["last_name"].isString() &&
-        (*jsonBody)["email"].isString() &&
-        (*jsonBody)["password"].isString()) {
-      Users user;
-      user.setFirstName((*jsonBody)["first_name"].asString());
-      user.setLastName((*jsonBody)["last_name"].asString());
-      user.setEmail((*jsonBody)["email"].asString());
-      user.setIsDeleted(true);
-      string password = (*jsonBody)["password"].asString();
-      string hashedPassword = bcrypt::generateHash(password);
-      user.setPassword(hashedPassword);
-      auto currDate = trantor::Date::now();
-      user.setCreatedAt(currDate);
-      user.setUpdatedAt(currDate);
-
-      try {
-        auto result = mp.insertFuture(user);
-        auto r = result.get();
-        shared_ptr<HttpResponse> resp = handleResponse(r.toJson(), k201Created);
-        callback(resp);
-      } catch (const exception &e) {
-        cerr << "Exception caught: " << typeid(e).name() << " - " << e.what()
-             << endl;
-
-        Json::Value response;
-        response["error"] = "Unable to create user";
-        shared_ptr<HttpResponse> resp =
-            handleResponse(response, k400BadRequest);
-        callback(resp);
-      }
-
-    } else {
+    try {
+      services::UserService userService(client);
+      auto user = userService.createUser(jsonBody ? *jsonBody : Json::Value());
+      callback(handleResponse(user.toJson(), k201Created));
+    } catch (const invalid_argument &) {
       Json::Value error;
       error["error"] = "Request body must contain first_name, last_name, email and password";
-      shared_ptr<HttpResponse> response = handleResponse(error, k400BadRequest);
-      callback(response);
+      callback(handleResponse(error, k400BadRequest));
+    } catch (const exception &) {
+      Json::Value response;
+      response["error"] = "Unable to create user";
+      callback(handleResponse(response, k400BadRequest));
     }
   } else {
     Json::Value error;
@@ -176,42 +148,17 @@ void UserController::updateUserById(
   connect(); // connect to db
 
   if (client) {
-    Mapper<Users> mp(client);
-
     auto jsonBody = req->getJsonObject();
-    if (!jsonBody || !(*jsonBody)["first_name"].isString() ||
-        !(*jsonBody)["last_name"].isString() ||
-        !(*jsonBody)["email"].isString() ||
-        !(*jsonBody)["password"].isString()) {
+    try {
+      services::UserService userService(client);
+      auto user = userService.updateUser(
+          userId, jsonBody ? *jsonBody : Json::Value());
+      shared_ptr<HttpResponse> response = handleResponse(user.toJson(), k200OK);
+      callback(response);
+    } catch (const invalid_argument &) {
       Json::Value error;
       error["error"] = "Request body must contain first_name, last_name, email and password";
       callback(handleResponse(error, k400BadRequest));
-      return;
-    }
-    string firstName = jsonBody->get("first_name", "").asString();
-    string lastName = jsonBody->get("last_name", "").asString();
-    string email = jsonBody->get("email", "").asString();
-    string password = jsonBody->get("password", "").asString();
-
-    Users user;
-
-    user.setId(userId);
-    user.setFirstName(firstName);
-    user.setLastName(lastName);
-    user.setEmail(email);
-    user.setEmail(email);
-
-    string hashedPassword = bcrypt::generateHash(password);
-    user.setPassword(hashedPassword);
-
-    auto currDate = trantor::Date::now();
-    user.setUpdatedAt(currDate);
-
-    try {
-      // Update the user in the database
-      auto result = mp.update(user);
-      shared_ptr<HttpResponse> response = handleResponse(user.toJson(), k200OK);
-      callback(response);
     } catch (const exception &e) {
       cerr << "Exception caught: " << typeid(e).name() << " - " << e.what()
            << endl;
@@ -238,8 +185,8 @@ void UserController::deleteUserById(
   connect(); // connect to db
 
   if (client) {
-    Mapper<Users> mp(client);
-    auto user = mp.deleteByPrimaryKey(userId);
+    services::UserService userService(client);
+    auto user = userService.deleteUser(userId);
 
     if (user) {
       auto resp = HttpResponse::newHttpResponse();
