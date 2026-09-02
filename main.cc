@@ -63,8 +63,15 @@ void registerRoutes() {
       [](const HttpRequestPtr &,
          function<void(const HttpResponsePtr &)> &&callback) {
         Json::Value response;
-        const bool databaseReady = drogon::app().hasDbClient("default") &&
-                                    drogon::app().areAllDbClientsAvailable();
+        bool databaseReady = false;
+        try {
+          // getDbClient() is available across the supported Drogon releases;
+          // hasDbClient() was introduced later than the pinned baseline.
+          databaseReady = drogon::app().getDbClient() != nullptr &&
+                          drogon::app().areAllDbClientsAvailable();
+        } catch (const std::exception &) {
+          databaseReady = false;
+        }
         response["status"] = databaseReady ? "ready" : "not_ready";
         response["database"] = databaseReady ? "up" : "down";
         auto result = HttpResponse::newHttpJsonResponse(response);
