@@ -1,4 +1,4 @@
-FROM ubuntu:24.04 AS build-env
+FROM buildpack-deps:bookworm AS build-env
 
 # Set the timezone
 ENV TZ=America/New_York
@@ -20,10 +20,10 @@ ENV DB_USER=$DB_USER
 ENV DB_PASSWORD=$DB_PASSWORD
 
 # Update and install only build/runtime dependencies used by this service.
-RUN sed -i 's|http://archive.ubuntu.com|https://archive.ubuntu.com|g; s|http://security.ubuntu.com|https://security.ubuntu.com|g' /etc/apt/sources.list.d/ubuntu.sources && \
+RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g; s|http://security.debian.org|https://security.debian.org|g' /etc/apt/sources.list.d/debian.sources && \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      ca-certificates cmake g++ gcc git curl libjsoncpp-dev uuid-dev \
+      cmake curl libjsoncpp-dev uuid-dev \
       libssl-dev zlib1g-dev libbz2-dev liblzma-dev libpq-dev && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
