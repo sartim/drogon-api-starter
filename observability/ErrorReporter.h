@@ -1,12 +1,19 @@
 #pragma once
 
 #include <exception>
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
 
 namespace observability {
 using ErrorContext = std::map<std::string, std::string>;
+
+struct ErrorReporterConfig {
+  std::string provider;
+  std::string dsn;
+  ErrorContext settings;
+};
 
 class ErrorReporter {
 public:
@@ -24,6 +31,14 @@ public:
                         const ErrorContext& context) noexcept override;
   std::string provider() const override;
 };
+
+using ErrorReporterFactory =
+    std::function<std::unique_ptr<ErrorReporter>(const ErrorReporterConfig&)>;
+
+// Optional integrations register adapters without coupling the platform to a
+// vendor SDK. Unknown providers continue to use the no-op reporter.
+void registerErrorReporterProvider(const std::string& provider,
+                                   ErrorReporterFactory factory);
 
 ErrorReporter& errorReporter();
 void configureErrorReporter(const std::string& provider,
