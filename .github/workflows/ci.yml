@@ -14,11 +14,14 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Build Docker image
+      - name: Build Docker builder image
+        run: docker build --target build-env --tag user-service:ci-builder .
+
+      - name: Build Docker runtime image
         run: docker build --tag user-service:ci .
 
       - name: Run unit tests
-        run: docker run --rm user-service:ci ctest --test-dir build --output-on-failure
+        run: docker run --rm user-service:ci-builder ctest --test-dir build --output-on-failure
 
       - name: Start service
         run: docker run --detach --name user-service-ci --publish 8000:8000 user-service:ci
