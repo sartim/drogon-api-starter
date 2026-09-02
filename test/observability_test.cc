@@ -1,10 +1,12 @@
 #include "observability/Observability.h"
 #include "observability/ErrorReporter.h"
+#include "observability/RateLimiter.h"
 
 #include <drogon/HttpRequest.h>
 
 #include <iostream>
 #include <stdexcept>
+#include <chrono>
 
 int main() {
   auto request = drogon::HttpRequest::newHttpRequest();
@@ -40,6 +42,13 @@ int main() {
     throw std::runtime_error("test error");
   } catch (const std::exception& error) {
     observability::captureException(error, "test-request-id");
+  }
+
+  observability::RateLimiter limiter(2, std::chrono::seconds(60));
+  if (!limiter.allow("client") || !limiter.allow("client") ||
+      limiter.allow("client") || !limiter.allow("other")) {
+    std::cerr << "rate limiter did not enforce per-client limits\n";
+    return 1;
   }
 
   return 0;

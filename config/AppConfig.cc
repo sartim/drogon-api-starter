@@ -48,6 +48,19 @@ double seconds(const std::map<std::string, std::string>& values,
   }
 }
 
+int nonNegativeNumber(const std::map<std::string, std::string>& values,
+                      const std::string& key, int fallback) {
+  const auto value = values.find(key);
+  if (value == values.end() || value->second.empty()) return fallback;
+  try {
+    const auto parsed = std::stoi(value->second);
+    if (parsed < 0 || parsed > 65535) throw std::out_of_range("number range");
+    return parsed;
+  } catch (const std::exception&) {
+    throw std::runtime_error("Invalid numeric configuration: " + key);
+  }
+}
+
 bool flag(const std::map<std::string, std::string>& values,
           const std::string& key, bool fallback) {
   const auto value = values.find(key);
@@ -131,6 +144,10 @@ AppConfig AppConfig::fromValues(const std::map<std::string, std::string>& values
   config.redisPassword = values.count("REDIS_PASSWORD") ? values.at("REDIS_PASSWORD") : "";
   config.idleConnectionTimeoutSeconds =
       number(values, "HTTP_IDLE_CONNECTION_TIMEOUT_SECONDS", 60);
+  config.rateLimitRequests =
+      nonNegativeNumber(values, "RATE_LIMIT_REQUESTS", 0);
+  config.rateLimitWindowSeconds =
+      number(values, "RATE_LIMIT_WINDOW_SECONDS", 60);
   if (values.count("REDIS_DB") && !values.at("REDIS_DB").empty()) {
     try {
       config.redisDb = std::stoi(values.at("REDIS_DB"));
@@ -148,6 +165,7 @@ AppConfig AppConfig::load(const std::filesystem::path& envFile) {
                           "DB_USER", "DB_PASSWORD", "SENTRY_DSN",
                           "ERROR_TRACKING_PROVIDER", "HTTP_HOST",
                           "HTTP_PORT", "HTTP_IDLE_CONNECTION_TIMEOUT_SECONDS",
+                          "RATE_LIMIT_REQUESTS", "RATE_LIMIT_WINDOW_SECONDS",
                           "DB_CONNECTION_POOL_SIZE", "DB_QUERY_TIMEOUT_SECONDS",
                           "REDIS_ENABLED", "REDIS_HOST", "REDIS_PORT",
                           "REDIS_CONNECTION_POOL_SIZE", "REDIS_COMMAND_TIMEOUT_SECONDS",
