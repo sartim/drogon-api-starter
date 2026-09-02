@@ -324,5 +324,7 @@ To run the endpoint checks against an already-running stack:
 
 The CI workflow seeds a disposable test user and then exercises JWT login,
 authenticated create/list/get/update/delete operations, and paginated listing.
+It also stops Redis to verify cache fail-open behavior, then stops PostgreSQL
+to verify `/ready` returns HTTP 503 when the database is unavailable.
 The script does not build images or start containers, so local Docker remains
 optional; it expects an already-running user-service stack and `jq`.

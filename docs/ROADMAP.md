@@ -41,7 +41,8 @@ preserving the example code as a complete reference implementation.
 - [x] Add CI integration smoke tests for Compose migrations, readiness,
       documentation, metrics, and unauthenticated protected routes
 - [x] Add integration tests for authentication, CRUD, and pagination
-- [ ] Add integration tests for cache fallback and readiness failures
+- [x] Add integration tests for Redis cache fallback and database readiness
+      failures
 - [ ] Keep migrations as an explicit deployment job, never run them from every
       application replica
 - [ ] Pin external dependency versions or commits and document upgrade policy
