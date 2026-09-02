@@ -9,8 +9,19 @@ usage() {
 [[ ${1:-} == "init" ]] || usage
 project_name=${2:-}
 destination=${3:-}
-profile=${5:-user-service}
 [[ -n "$project_name" && -n "$destination" ]] || usage
+profile=user-service
+shift 3
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --profile)
+      [[ $# -ge 2 ]] || usage
+      profile=$2
+      shift 2
+      ;;
+    *) usage ;;
+  esac
+done
 [[ "$profile" == "minimal" || "$profile" == "user-service" ]] || {
   echo "Profile must be 'user-service' or 'minimal'." >&2
   exit 2
@@ -41,6 +52,13 @@ fi
 find "$destination" -type f -not -path '*/.git/*' -exec sed -i.bak "s/@PROJECT_NAME@/$project_name/g" {} +
 find "$destination" -type f -not -path '*/.git/*' -exec sed -i.bak "s/drogon_user_service/$project_name/g" {} +
 find "$destination" -name '*.bak' -delete
+
+# Keep extension points stable across profiles without making optional
+# capabilities mandatory. These directories are intentionally empty at init.
+for directory in platform examples migrations deploy; do
+  mkdir -p "$destination/$directory"
+  touch "$destination/$directory/.gitkeep"
+done
 
 echo "Generated $profile Drogon service: $destination"
 echo "Next steps:"

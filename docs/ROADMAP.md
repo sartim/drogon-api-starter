@@ -57,13 +57,13 @@ is available when a developer wants only the platform foundation.
 
 ## P2 — Following: reusable project generation
 
-- [ ] Define a stable generated layout for `app`, `platform`, `examples`,
+- [x] Define a stable generated layout for `app`, `platform`, `examples`,
       `migrations`, `tests`, `deploy`, and `docs`.
 - [ ] Keep example-specific migrations, configuration, and tests isolated from
       the platform foundation.
 - [ ] Add a generator wrapper around `drogon_ctl` for controllers, filters,
       models, and views.
-- [ ] Add golden-output tests for generated minimal and user-service projects.
+- [x] Add golden-output tests for generated minimal and user-service projects.
 - [ ] Publish contribution, compatibility, and release-maintenance policies.
 
 ## P3 — Future: optional gRPC adapter

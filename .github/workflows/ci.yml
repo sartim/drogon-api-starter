@@ -26,6 +26,9 @@ jobs:
       - name: Run user-service profile tests
         run: docker run --rm user-service:ci-builder ctest --test-dir build/user-service --output-on-failure
 
+      - name: Test starter generator profiles
+        run: docker run --rm user-service:ci-builder bash test/generator_test.sh
+
       - name: Build user-service runtime profile
         run: docker build --build-arg ENABLE_USER_SERVICE=ON --tag user-service:ci-user .
 

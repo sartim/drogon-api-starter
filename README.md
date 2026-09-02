@@ -29,6 +29,13 @@ minimal profile:
 
     $ ./scripts/drogon-starter init payments-api ../payments-api --profile minimal
 
+Both profiles create stable extension points for `platform`, `examples`,
+`migrations`, and `deploy` in addition to their profile-specific source,
+tests, and documentation. These directories start empty so teams can add
+capabilities without changing the generator contract. CI runs a generator
+contract test for both profiles and compares the minimal output with its
+checked-in golden templates.
+
 ## Supported starter profiles
 
 The repository provides batteries-included profiles without forcing every
