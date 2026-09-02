@@ -223,6 +223,7 @@ void runServer(const config::AppConfig &appConfig) {
                                      : static_cast<int>(k500InternalServerError);
         if (response) {
           response->addHeader("X-Request-ID", id);
+          response->addHeader("traceparent", observability::traceparent(request));
         }
         LOG_INFO << "request_completed request_id=" << id
                  << " method=" << request->methodString()
