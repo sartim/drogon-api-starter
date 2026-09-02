@@ -44,23 +44,8 @@ void UserController::getUsers(
         page_size = stoi(page_size_it->second);
       }
 
-      if (page < 1 || page_size < 1 || page_size > 100) {
-        Json::Value error;
-        error["error"] = "page must be positive and page_size must be between 1 and 100";
-        callback(handleResponse(error, k400BadRequest));
-        return;
-      }
-
-      // Calculate offset and limit
-      int offset = (page - 1) * page_size;
-      int limit = page_size;
-
-      Mapper<Users> mp(client);
-
-      auto users = mp.orderBy(Users::Cols::_created_at)
-                       .limit(limit)
-                       .offset(offset)
-                       .findAll();
+      services::UserService userService(client);
+      auto users = userService.listUsers(page, page_size);
       Json::Value usersJson(Json::arrayValue);
       for (const auto &user : users) {
         usersJson.append(services::UserService::toPublicJson(user));
@@ -69,6 +54,10 @@ void UserController::getUsers(
       userResults["results"] = usersJson;
       shared_ptr<HttpResponse> response = handleResponse(usersJson, k200OK);
       callback(response);
+    } catch (const invalid_argument &e) {
+      Json::Value error;
+      error["error"] = e.what();
+      callback(handleResponse(error, k400BadRequest));
     } catch (const exception &e) {
       Json::Value error;
       error["error"] = e.what();
@@ -95,10 +84,9 @@ void UserController::getUserById(
   connect(); // connect to db
 
   if (client) {
-    Mapper<Users> mp(client);
-    auto user = mp.findByPrimaryKey(id);
-
-    if (!user.getId()) {
+    services::UserService userService(client);
+    const auto user = userService.findById(id);
+    if (!user) {
       Json::Value error;
       error["error"] = "Record not found";
       callback(handleResponse(error, k404NotFound));
@@ -106,7 +94,7 @@ void UserController::getUserById(
     }
 
     shared_ptr<HttpResponse> response = handleResponse(
-        services::UserService::toPublicJson(user), k200OK);
+        services::UserService::toPublicJson(*user), k200OK);
     callback(response);
   } else {
     Json::Value error;
