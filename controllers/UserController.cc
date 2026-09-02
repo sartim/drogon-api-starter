@@ -1,6 +1,7 @@
 #include "UserController.h"
 #include "bcrypt.h"
 #include "models/Users.h"
+#include "services/UserService.h"
 #include <drogon/HttpResponse.h>
 #include <drogon/HttpSimpleController.h>
 #include <drogon/HttpViewData.h>
@@ -62,14 +63,7 @@ void UserController::getUsers(
                        .findAll();
       Json::Value usersJson(Json::arrayValue);
       for (const auto &user : users) {
-        Json::Value userJson;
-        userJson["id"] = user.getValueOfId();
-        userJson["first_name"] = user.getValueOfFirstName();
-        userJson["last_name"] = user.getValueOfLastName();
-        userJson["email"] = user.getValueOfEmail();
-        userJson["created_at"] = user.getValueOfCreatedAt().toDbString();
-        userJson["updated_at"] = user.getValueOfUpdatedAt().toDbString();
-        usersJson.append(userJson);
+        usersJson.append(services::UserService::toPublicJson(user));
       }
       Json::Value userResults;
       userResults["results"] = usersJson;
@@ -111,17 +105,8 @@ void UserController::getUserById(
       return;
     }
 
-    Json::Value usersJson(Json::arrayValue);
-    Json::Value userJson;
-    userJson["id"] = user.getValueOfId();
-    userJson["first_name"] = user.getValueOfFirstName();
-    userJson["last_name"] = user.getValueOfLastName();
-    userJson["email"] = user.getValueOfEmail();
-    userJson["created_at"] = user.getValueOfCreatedAt().toDbString();
-    userJson["updated_at"] = user.getValueOfUpdatedAt().toDbString();
-    usersJson.append(userJson);
-
-    shared_ptr<HttpResponse> response = handleResponse(usersJson, k200OK);
+    shared_ptr<HttpResponse> response = handleResponse(
+        services::UserService::toPublicJson(user), k200OK);
     callback(response);
   } else {
     Json::Value error;
