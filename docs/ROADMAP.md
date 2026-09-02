@@ -38,12 +38,19 @@ is available when a developer wants only the platform foundation.
       configuration, migrations, seeding, Swagger, and health validation.
 - [ ] Pin Drogon and third-party dependency versions or commits and document
       the upgrade policy.
+- [ ] Introduce vendor-neutral error-reporting and APM interfaces with a safe
+      no-op provider; keep Sentry, OpenTelemetry, and other exporters optional.
 - [ ] Complete and merge the Dependabot configuration
       ([PR #15](https://github.com/sartim/drogon-api-starter/pull/15)).
 - [ ] Merge the macOS metadata protection
       ([PR #18](https://github.com/sartim/drogon-api-starter/pull/18)).
 
-## P1 — Next: deployment-ready operations
+## P1 — Next: portable observability and deployment operations
+
+- [ ] Add provider adapters for OpenTelemetry/OTLP and Sentry without exposing
+      vendor SDKs to application or service code.
+- [ ] Propagate request ID, trace ID, route, status, version, and bounded
+      contextual fields while keeping reporting asynchronous and fail-open.
 
 - [ ] Add Kubernetes Deployment, Service, ConfigMap, Secret example, resource
       requests/limits, probes, and optional Ingress.
