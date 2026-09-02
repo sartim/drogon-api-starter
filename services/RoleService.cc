@@ -1,0 +1,87 @@
+#include "RoleService.h"
+
+#include <drogon/orm/Mapper.h>
+
+#include <stdexcept>
+#include <utility>
+
+namespace services {
+
+RoleService::RoleService(drogon::orm::DbClientPtr client)
+    : client_(std::move(client)) {}
+
+std::vector<drogon_model::drogon_user_service::Roles> RoleService::listRoles(
+    int page, int pageSize) const {
+  if (page < 1 || pageSize < 1 || pageSize > 100) {
+    throw std::invalid_argument(
+        "page must be positive and page_size must be between 1 and 100");
+  }
+  drogon::orm::Mapper<drogon_model::drogon_user_service::Roles> mapper(client_);
+  return mapper.orderBy(
+                    drogon_model::drogon_user_service::Roles::Cols::_created_at)
+      .limit(pageSize)
+      .offset((page - 1) * pageSize)
+      .findAll();
+}
+
+std::optional<drogon_model::drogon_user_service::Roles> RoleService::findById(
+    const std::string& id) const {
+  drogon::orm::Mapper<drogon_model::drogon_user_service::Roles> mapper(client_);
+  auto role = mapper.findByPrimaryKey(id);
+  if (!role.getId()) return std::nullopt;
+  return role;
+}
+
+namespace {
+void validateRoleInput(const Json::Value& input) {
+  if (!input.isObject() || !input["name"].isString() ||
+      !input["description"].isString()) {
+    throw std::invalid_argument("Request body must contain name and description");
+  }
+}
+}  // namespace
+
+drogon_model::drogon_user_service::Roles RoleService::createRole(
+    const Json::Value& input) const {
+  validateRoleInput(input);
+  drogon_model::drogon_user_service::Roles role;
+  role.setName(input["name"].asString());
+  role.setDescription(input["description"].asString());
+  role.setIsDeleted(true);
+  const auto now = trantor::Date::now();
+  role.setCreatedAt(now);
+  role.setUpdatedAt(now);
+  drogon::orm::Mapper<drogon_model::drogon_user_service::Roles> mapper(client_);
+  return mapper.insertFuture(role).get();
+}
+
+drogon_model::drogon_user_service::Roles RoleService::updateRole(
+    const std::string& id, const Json::Value& input) const {
+  validateRoleInput(input);
+  drogon_model::drogon_user_service::Roles role;
+  role.setId(id);
+  role.setName(input["name"].asString());
+  role.setDescription(input["description"].asString());
+  role.setUpdatedAt(trantor::Date::now());
+  drogon::orm::Mapper<drogon_model::drogon_user_service::Roles> mapper(client_);
+  mapper.update(role);
+  return role;
+}
+
+bool RoleService::deleteRole(const std::string& id) const {
+  drogon::orm::Mapper<drogon_model::drogon_user_service::Roles> mapper(client_);
+  return mapper.deleteByPrimaryKey(id);
+}
+
+Json::Value RoleService::toPublicJson(
+    const drogon_model::drogon_user_service::Roles& role) {
+  Json::Value result;
+  result["id"] = role.getValueOfId();
+  result["name"] = role.getValueOfName();
+  result["description"] = role.getValueOfDescription();
+  result["created_at"] = role.getValueOfCreatedAt().toDbString();
+  result["updated_at"] = role.getValueOfUpdatedAt().toDbString();
+  return result;
+}
+
+}  // namespace services

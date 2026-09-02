@@ -1,5 +1,6 @@
 #include "RoleController.h"
 #include "models/Roles.h"
+#include "services/RoleService.h"
 #include <drogon/HttpResponse.h>
 #include <drogon/HttpSimpleController.h>
 #include <drogon/HttpViewData.h>
@@ -49,25 +50,11 @@ void RoleController::getRoles(
         return;
       }
 
-      // Calculate offset and limit
-      int offset = (page - 1) * page_size;
-      int limit = page_size;
-
-      Mapper<Roles> mp(client);
-
-      auto Roles = mp.orderBy(Roles::Cols::_created_at)
-                       .limit(limit)
-                       .offset(offset)
-                       .findAll();
+      services::RoleService roleService(client);
+      auto roles = roleService.listRoles(page, page_size);
       Json::Value RolesJson(Json::arrayValue);
-      for (const auto &role : Roles) {
-        Json::Value roleJson;
-        roleJson["id"] = role.getValueOfId();
-        roleJson["name"] = role.getValueOfName();
-        roleJson["description"] = role.getValueOfDescription();
-        roleJson["created_at"] = role.getValueOfCreatedAt().toDbString();
-        roleJson["updated_at"] = role.getValueOfUpdatedAt().toDbString();
-        RolesJson.append(roleJson);
+      for (const auto &role : roles) {
+        RolesJson.append(services::RoleService::toPublicJson(role));
       }
       Json::Value roleResults;
       roleResults["results"] = RolesJson;
@@ -99,26 +86,17 @@ void RoleController::getRoleById(
   connect(); // connect to db
 
   if (client) {
-    Mapper<Roles> mp(client);
-    auto role = mp.findByPrimaryKey(id);
-
-    if (!role.getId()) {
+    services::RoleService roleService(client);
+    const auto role = roleService.findById(id);
+    if (!role) {
       Json::Value error;
       error["error"] = "Record not found";
       callback(handleResponse(error, k404NotFound));
       return;
     }
 
-    Json::Value RolesJson(Json::arrayValue);
-    Json::Value roleJson;
-    roleJson["id"] = role.getValueOfId();
-    roleJson["name"] = role.getValueOfName();
-    roleJson["description"] = role.getValueOfDescription();
-    roleJson["created_at"] = role.getValueOfCreatedAt().toDbString();
-    roleJson["updated_at"] = role.getValueOfUpdatedAt().toDbString();
-    RolesJson.append(roleJson);
-
-    shared_ptr<HttpResponse> response = handleResponse(RolesJson, k200OK);
+    shared_ptr<HttpResponse> response = handleResponse(
+        services::RoleService::toPublicJson(*role), k200OK);
     callback(response);
   } else {
     Json::Value error;
@@ -140,33 +118,15 @@ void RoleController::createRole(
   connect(); // connect to db
 
   if (client) {
-    Mapper<Roles> mp(client);
-
     auto jsonBody = req->getJsonObject();
-
-    // Check if jsonBody contains the required fields
-    if (!jsonBody || !(*jsonBody)["name"].isString() ||
-        !(*jsonBody)["description"].isString()) {
+    try {
+      services::RoleService roleService(client);
+      const auto role = roleService.createRole(jsonBody ? *jsonBody : Json::Value());
+      callback(handleResponse(role.toJson(), k201Created));
+    } catch (const invalid_argument &) {
       Json::Value error;
       error["error"] = "Missing data in JSON body";
-      shared_ptr<HttpResponse> response = handleResponse(error, k400BadRequest);
-      callback(response);
-      return;
-    }
-
-    Roles role;
-    role.setName((*jsonBody)["name"].asString());
-    role.setDescription((*jsonBody)["description"].asString());
-    role.setIsDeleted(true);
-
-    auto currDate = trantor::Date::now();
-    role.setCreatedAt(currDate);
-
-    try {
-      auto result = mp.insertFuture(role);
-      auto r = result.get();
-      auto resp = handleResponse(r.toJson(), k201Created);
-      callback(resp);
+      callback(handleResponse(error, k400BadRequest));
     } catch (const exception &e) {
       cerr << "Exception caught: " << typeid(e).name() << " - " << e.what()
            << endl;
@@ -194,29 +154,17 @@ void RoleController::updateRoleById(
   connect(); // connect to db
 
   if (client) {
-    Mapper<Roles> mp(client);
-
     auto jsonBody = req->getJsonObject();
-    if (!jsonBody || !(*jsonBody)["name"].isString() ||
-        !(*jsonBody)["description"].isString()) {
+    try {
+      services::RoleService roleService(client);
+      const auto role = roleService.updateRole(
+          roleId, jsonBody ? *jsonBody : Json::Value());
+      shared_ptr<HttpResponse> response = handleResponse(role.toJson(), k200OK);
+      callback(response);
+    } catch (const invalid_argument &) {
       Json::Value error;
       error["error"] = "Request body must contain name and description";
       callback(handleResponse(error, k400BadRequest));
-      return;
-    }
-    string name = jsonBody->get("name", "").asString();
-    string description = jsonBody->get("description", "").asString();
-
-    Roles role;
-
-    role.setId(roleId);
-    role.setName(name);
-    role.setDescription(description);
-
-    try {
-      mp.update(role);
-      shared_ptr<HttpResponse> response = handleResponse(role.toJson(), k200OK);
-      callback(response);
     } catch (const exception &e) {
       LOG_ERROR << "Failed to update role: " << e.what();
       Json::Value error;
@@ -242,8 +190,8 @@ void RoleController::deleteRoleById(
   connect(); // connect to db
 
   if (client) {
-    Mapper<Roles> mp(client);
-    auto role = mp.deleteByPrimaryKey(roleId);
+    services::RoleService roleService(client);
+    auto role = roleService.deleteRole(roleId);
 
     if (role) {
       auto resp = HttpResponse::newHttpResponse();
