@@ -2,6 +2,9 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=intellij+all,visualstudio,visualstudiocode,cmake,c,c++
 
 ### C ###
+.env*
+.DS_Store
+
 # Prerequisites
 *.d
 

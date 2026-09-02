@@ -13,8 +13,11 @@ services:
       - DB_USER=${DB_USER}
       - DB_PORT=${DB_PORT}
       - DB_PASSWORD=${DB_PASSWORD}
+      - SENTRY_DSN=${SENTRY_DSN}
+      - HTTP_HOST=${HTTP_HOST:-0.0.0.0}
+      - HTTP_PORT=${HTTP_PORT:-8000}
     image: user_service:latest
-    command: ./drogon_user_service --action=run-server  
+    command: /app/drogon_user_service --action=run-server
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8000/health"]
       interval: 10s
