@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 AS build-env
+FROM ubuntu:24.04 AS build-env
 
 # Set the timezone
 ENV TZ=America/New_York
@@ -19,13 +19,13 @@ ENV DB_NAME=$DB_NAME
 ENV DB_USER=$DB_USER
 ENV DB_PASSWORD=$DB_PASSWORD
 
-# Update and install necessary packages
-RUN apt-get update
-RUN apt-get install -y redis-server libhiredis-dev git
-RUN apt-get install -y cmake g++ gcc libjsoncpp-dev uuid-dev openssl
-RUN apt-get install -y libssl-dev zlib1g-dev libbz2-dev liblzma-dev
-RUN apt-get install -y postgresql postgresql-contrib postgresql-all
-RUN apt clean && rm -rf /var/lib/apt/lists/*
+# Update and install only build/runtime dependencies used by this service.
+RUN sed -i 's|http://archive.ubuntu.com|https://archive.ubuntu.com|g; s|http://security.ubuntu.com|https://security.ubuntu.com|g' /etc/apt/sources.list.d/ubuntu.sources && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      ca-certificates cmake g++ gcc git curl libjsoncpp-dev uuid-dev \
+      libssl-dev zlib1g-dev libbz2-dev liblzma-dev libpq-dev && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Clone the Drogon repository
 RUN git clone https://github.com/drogonframework/drogon

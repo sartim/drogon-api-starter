@@ -32,6 +32,10 @@ To run tests after the initial setup:
 
     $ ctest --test-dir build --output-on-failure
 
+The liveness endpoint is implemented by the application at
+`GET /health` and returns `{"status":"up"}` without requiring a database
+connection. The Docker healthcheck calls this endpoint.
+
 On Linux, install Drogon, PostgreSQL development headers, OpenSSL, jwt-cpp,
 libpqxx, JsonCpp, CMake, and a C++17 compiler using your distribution's
 package manager. Then clone Bcrypt.cpp into the project root and use the same
