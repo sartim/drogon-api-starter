@@ -2,6 +2,7 @@
 #include "controllers/RoleController.h"
 #include "controllers/UserController.h"
 #include "models/Users.h"
+#include "observability/Observability.h"
 #include "tables/PermissionTable.h"
 #include "tables/RolePermissionTable.h"
 #include "tables/RoleTable.h"
@@ -76,6 +77,19 @@ void registerRoutes() {
   // readiness.
   drogon::app().registerHandler("/health", healthHandler, {Get});
   drogon::app().registerHandler("/", healthHandler, {Get});
+
+  drogon::app().registerHandler(
+      "/metrics",
+      [](const HttpRequestPtr &,
+         function<void(const HttpResponsePtr &)> &&callback) {
+        auto response = HttpResponse::newHttpResponse();
+        response->setStatusCode(k200OK);
+        response->setContentTypeCodeAndCustomString(
+            CT_CUSTOM, "text/plain; version=0.0.4; charset=utf-8");
+        response->setBody(observability::metrics().prometheus());
+        callback(response);
+      },
+      {Get});
 
   drogon::app().registerHandler(
       "/docs",
@@ -189,7 +203,31 @@ void registerRoutes() {
 
 void dropTables() {}
 
-void runServer() {
+void runServer(const string &sentryDsn) {
+  observability::configure(sentryDsn);
+
+  app().registerPreRoutingAdvice([](const HttpRequestPtr &request) {
+    const auto id = observability::requestId(request);
+    observability::metrics().recordRequest(request);
+    LOG_INFO << "request_started request_id=" << id
+             << " method=" << request->methodString()
+             << " path=" << request->path();
+  });
+
+  app().registerPostHandlingAdvice(
+      [](const HttpRequestPtr &request, const HttpResponsePtr &response) {
+        observability::metrics().recordResponse(request, response);
+        const auto id = observability::requestId(request);
+        const auto status = response ? static_cast<int>(response->statusCode())
+                                     : static_cast<int>(k500InternalServerError);
+        if (response) {
+          response->addHeader("X-Request-ID", id);
+        }
+        LOG_INFO << "request_completed request_id=" << id
+                 << " method=" << request->methodString()
+                 << " path=" << request->path() << " status=" << status;
+      });
+
   // Set log level
   drogon::app().setLogLevel(trantor::Logger::kTrace);
   int32_t port = 8000;
@@ -329,7 +367,7 @@ int main(int argc, char *argv[]) {
   // Check the action and perform the corresponding operation
   if (key == "--action") {
     if (value == "run-server") {
-      runServer();
+      runServer(envVariables["SENTRY_DSN"]);
     } else if (value == "create-tables") {
       createTables(connectionString);
     } else if (value == "drop-tables") {
