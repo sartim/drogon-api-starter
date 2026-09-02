@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
-project(drogon_user_service CXX)
+
+file(STRINGS "${CMAKE_SOURCE_DIR}/SERVICE_VERSION" SERVICE_VERSION LIMIT_COUNT 1)
+if (NOT SERVICE_VERSION MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+$")
+    message(FATAL_ERROR "VERSION must contain a semantic version in X.Y.Z format")
+endif ()
+
+project(drogon_user_service VERSION ${SERVICE_VERSION} LANGUAGES CXX)
 
 include(CTest)
 enable_testing()
