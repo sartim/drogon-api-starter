@@ -29,6 +29,22 @@ services:
         condition: service_healthy
     entrypoint: ["/bin/sh", "/scripts/docker-migrate.sh"]
 
+  seed:
+    image: postgres:16-alpine
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-drogon_user_service}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+    volumes:
+      - ./db:/db:ro
+      - ./scripts/docker-seed.sh:/scripts/docker-seed.sh:ro
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    entrypoint: ["/bin/sh", "/scripts/docker-seed.sh"]
+
   web-server:
     build:
       context: .
@@ -44,6 +60,7 @@ services:
       - DB_PORT=${DB_PORT:-5432}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
       - SENTRY_DSN=${SENTRY_DSN:-}
+      - ERROR_TRACKING_PROVIDER=${ERROR_TRACKING_PROVIDER:-none}
       - HTTP_HOST=${HTTP_HOST:-0.0.0.0}
       - HTTP_PORT=${HTTP_PORT:-8000}
       - REDIS_ENABLED=${REDIS_ENABLED:-true}
@@ -63,6 +80,8 @@ services:
       postgres:
         condition: service_healthy
       migrate:
+        condition: service_completed_successfully
+      seed:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
