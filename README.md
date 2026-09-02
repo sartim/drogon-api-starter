@@ -37,6 +37,17 @@ To run tests after the initial setup:
 
     $ ctest --test-dir build --output-on-failure
 
+To rebuild and run the complete local unit-test suite from a clean checkout:
+
+    $ ./scripts/setup_local.sh
+
+To run only the test binary with verbose DrogonTest output:
+
+    $ ./build/test/drogon_user_service_test
+
+The unit tests do not require PostgreSQL or a running API server. The server
+is started separately with `./build/drogon_user_service --action=run-server`.
+
 The liveness endpoint is implemented by the application at
 `GET /health` and returns `{"status":"up"}` without requiring a database
 connection. The Docker healthcheck calls this endpoint.

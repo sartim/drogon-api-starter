@@ -2,6 +2,7 @@
 #include <drogon/drogon_test.h>
 #include <drogon/drogon.h>
 #include "schemas/AuthSchema.h"
+#include "helpers/AuthToken.h"
 
 DROGON_TEST(BasicTest)
 {
@@ -24,6 +25,33 @@ DROGON_TEST(AuthSchemaReportsMissingFields)
     const auto errors = schema.validate(Json::Value(Json::objectValue));
 
     CHECK(errors.size() == 2);
+}
+
+DROGON_TEST(AuthSchemaRejectsInvalidFieldTypesAndEmptyValues)
+{
+    AuthSchema schema;
+    Json::Value body;
+    body["email"] = "";
+    body["password"] = 123;
+
+    CHECK(schema.validate(body).size() == 2);
+}
+
+DROGON_TEST(JwtAcceptsGeneratedToken)
+{
+    const std::string secret = "unit-test-secret";
+    const auto token = generateJWT(secret, "user@example.com");
+
+    CHECK(verifyJWT(secret, token));
+    CHECK(verifyJWT(secret, "Bearer " + token));
+}
+
+DROGON_TEST(JwtRejectsWrongSecretAndMalformedToken)
+{
+    const std::string token = generateJWT("unit-test-secret", "user@example.com");
+
+    CHECK(!verifyJWT("wrong-secret", token));
+    CHECK(!verifyJWT("unit-test-secret", "not-a-jwt"));
 }
 
 int main(int argc, char** argv) 
