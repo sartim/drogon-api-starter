@@ -1,84 +1,91 @@
 # Drogon API platform starter roadmap
 
-The goal is to make this repository a maintained production template for
-serious Drogon services. The current user/RBAC API remains a working example
-module; platform capabilities should be reusable by new services.
+This roadmap tracks the repository as a production-oriented Drogon starter.
+The user/RBAC API is the default batteries-included profile; a minimal profile
+is available when a developer wants only the platform foundation.
 
-## Build profiles
+## Priority key
 
-The default profile must be a minimal Drogon API that does not require the
-example user service, Redis, or gRPC. Developers opt into capabilities as they
-need them:
+- **P0 — Now:** required to make the starter dependable for everyday use.
+- **P1 — Next:** high-value production capability after P0 is complete.
+- **P2 — Later:** valuable extension that depends on the platform foundation.
+- **P3 — Future:** optional ecosystem or advanced-scale capability.
 
-```text
-minimal       platform foundation only
-user-example  minimal + authentication + users/RBAC + migrations
-redis         optional cache integration
-grpc          optional gRPC adapter
-```
+## Completed
 
-The profiles should be available through `CMakePresets.json` and equivalent
-documented CMake options. This keeps the first-run experience small while
-preserving the example code as a complete reference implementation.
+- [x] **P0** Establish Drogon C++ service, PostgreSQL persistence, JWT/RBAC,
+      migrations, seeding, OpenAPI/Swagger, metrics, request IDs, logging,
+      unit tests, CI, and multi-stage Docker builds.
+- [x] **P0** Add minimal and user-service CMake profiles and presets.
+- [x] **P0** Add optional Redis-backed pagination caching with fail-open behavior.
+- [x] **P0** Add PostgreSQL and Redis Compose services with an explicit
+      one-shot migration service.
+- [x] **P0** Add `/health` liveness and `/ready` database readiness endpoints.
+- [x] **P0** Add the fresh-project generator with minimal and user-service
+      profiles.
+- [x] **P0** Add CI smoke tests for Compose startup, migrations, health,
+      readiness, documentation, metrics, and protected routes.
+- [x] **P0** Add CI integration tests for JWT login, authenticated CRUD, and
+      pagination using a disposable database fixture.
+- [x] **P0** Add CI degradation tests for Redis fail-open behavior and database
+      readiness failure.
+- [x] **P0** Automate semantic releases with `vX.Y.Z` tags; `v0.2.0` is
+      published.
 
-## Milestone 1: runnable platform baseline
+## P0 — Now: dependable starter workflow
 
-- [x] Drogon, PostgreSQL, JWT authentication, migrations, seeding, OpenAPI,
-      Docker, CI, unit tests, metrics, and request IDs
-- [x] Shared application/service boundaries for users and roles
-- [x] Optional Redis-backed pagination cache with fail-open behavior
-- [ ] Add PostgreSQL to the default Docker Compose stack
-- [ ] Add `/ready` for PostgreSQL readiness and optional Redis readiness
-- [ ] Provide one-command startup, migration, seeding, Swagger, and health
-      validation from a fresh clone
-- [ ] Make the minimal profile the default and move user/RBAC code behind an
-      opt-in example profile
-- [ ] Add `CMakePresets.json` for minimal, user-example, Redis, and CI builds
+- [ ] Make a fresh clone runnable with one documented command covering
+      configuration, migrations, seeding, Swagger, and health validation.
+- [ ] Pin Drogon and third-party dependency versions or commits and document
+      the upgrade policy.
+- [ ] Introduce vendor-neutral error-reporting and APM interfaces with a safe
+      no-op provider; keep Sentry, OpenTelemetry, and other exporters optional
+      ([PR #39](https://github.com/sartim/drogon-api-starter/pull/39)).
+- [ ] Complete and merge the Dependabot configuration
+      ([PR #15](https://github.com/sartim/drogon-api-starter/pull/15)).
+- [ ] Merge the macOS metadata protection
+      ([PR #18](https://github.com/sartim/drogon-api-starter/pull/18)).
 
-## Milestone 2: reliable delivery and integration testing
+## P1 — Next: portable observability and deployment operations
 
-- [ ] Add PostgreSQL and Redis service containers to GitHub Actions
-- [x] Add CI integration smoke tests for Compose migrations, readiness,
-      documentation, metrics, and unauthenticated protected routes
-- [x] Add integration tests for authentication, CRUD, and pagination
-- [x] Add integration tests for Redis cache fallback and database readiness
-      failures
+- [ ] Add provider adapters for OpenTelemetry/OTLP and Sentry without exposing
+      vendor SDKs to application or service code.
+- [ ] Propagate request ID, trace ID, route, status, version, and bounded
+      contextual fields while keeping reporting asynchronous and fail-open.
 - [ ] Keep migrations as an explicit deployment job, never run them from every
       application replica
 - [ ] Pin external dependency versions or commits and document upgrade policy
 - [ ] Complete Dependabot and semantic release configuration
 
-## Milestone 3: deployment-ready operations
+- [ ] Add Kubernetes Deployment, Service, ConfigMap, Secret example, resource
+      requests/limits, probes, and optional Ingress.
+- [ ] Add a Kubernetes migration Job with documented rollout ordering.
+- [ ] Add Prometheus scrape annotations and production logging/tracing guidance.
+- [ ] Add graceful shutdown, connection-pool tuning, timeouts, and rate limits.
+- [ ] Add an operational runbook for backups, rollbacks, migrations, and
+      incident response.
 
-- [ ] Add Kubernetes Deployment, Service, ConfigMap, Secret example, probes,
-      resource requests/limits, and optional Ingress
-- [ ] Add a Kubernetes migration Job and documented rollout ordering
-- [ ] Add Prometheus scrape annotations and production logging/tracing guidance
-- [ ] Add graceful shutdown, connection pool tuning, timeouts, and rate limits
-- [ ] Add an operational runbook for backup, rollback, migrations, and incidents
+## P2 — Following: reusable project generation
 
-## Milestone 4: optional gRPC adapter
-
-- [ ] Add a CMake option such as `ENABLE_GRPC=OFF` and keep REST builds free of
-      gRPC dependencies by default
-- [ ] Define versioned protobuf contracts and generate C++ sources during build
-- [ ] Implement separate gRPC server/client adapters on a dedicated port
-- [ ] Route both REST and gRPC adapters through the same application services
-- [ ] Share authentication, request IDs, tracing, metrics, deadlines, and
-      cancellation rules across adapters
-- [ ] Add gRPC health, integration tests, TLS, message limits, and deployment
-      configuration only when the adapter is enabled
-
-## Milestone 5: reusable project generation
-
-- [ ] Define a stable template layout for `app`, `platform`, `examples`,
-      `migrations`, `tests`, `deploy`, and `docs`
+- [ ] Define a stable generated layout for `app`, `platform`, `examples`,
+      `migrations`, `tests`, `deploy`, and `docs`.
 - [ ] Keep example-specific migrations, configuration, and tests isolated from
-      the platform foundation
-- [ ] Add a generator wrapper around `drogon_ctl` for project, controller,
-      filter, model, and view scaffolding
-- [ ] Provide a minimal generated example separate from the user/RBAC example
-- [ ] Publish contribution, compatibility, and release-maintenance policies
+      the platform foundation.
+- [ ] Add a generator wrapper around `drogon_ctl` for controllers, filters,
+      models, and views.
+- [ ] Add golden-output tests for generated minimal and user-service projects.
+- [ ] Publish contribution, compatibility, and release-maintenance policies.
+
+## P3 — Future: optional gRPC adapter
+
+- [ ] Add `ENABLE_GRPC=OFF` without adding gRPC dependencies to REST builds.
+- [ ] Define versioned protobuf contracts and generate C++ sources at build time.
+- [ ] Implement separate gRPC server/client adapters on a dedicated port.
+- [ ] Route REST and gRPC adapters through the same application services.
+- [ ] Share authentication, request IDs, tracing, metrics, deadlines, and
+      cancellation rules.
+- [ ] Add gRPC health, integration tests, TLS, message limits, and deployment
+      configuration only when enabled.
 
 ## Engineering principles
 
@@ -87,6 +94,6 @@ preserving the example code as a complete reference implementation.
 - Keep business logic in application services and adapters thin.
 - Prefer asynchronous I/O on high-throughput paths; the current synchronous
   ORM boundary is a deliberate follow-up before extreme-load production use.
-- Optional integrations must fail open where safe and must never make the
-  baseline service require credentials or infrastructure it does not use.
+- Optional integrations must fail open where safe and never make the baseline
+  service require credentials or infrastructure it does not use.
 - Every milestone should be independently reviewable through a pull request.
