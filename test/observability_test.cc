@@ -16,6 +16,14 @@ int main() {
     return 1;
   }
 
+  request->addHeader("traceparent",
+                     "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01");
+  if (observability::traceparent(request) !=
+      "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01") {
+    std::cerr << "trace context propagation failed\n";
+    return 1;
+  }
+
   observability::metrics().recordRequest(request);
   const auto metrics = observability::metrics().prometheus();
   if (metrics.find("http_requests_total") == std::string::npos) {

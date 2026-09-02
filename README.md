@@ -197,6 +197,10 @@ Each request receives an `X-Request-ID` response header. An incoming
 start/completion logs include the ID, method, path, and response status, which
 provides a lightweight trace across application logs.
 
+The service also accepts and returns the standard W3C `traceparent` header.
+This propagates distributed trace context without requiring an APM SDK in the
+baseline build; OpenTelemetry or vendor adapters can consume it later.
+
 Error tracking is provider-neutral and fail-open. The application depends on
 the `ErrorReporter` interface, while provider SDKs remain optional adapters.
 Set `ERROR_TRACKING_PROVIDER=none` for the no-op default. Sentry, OpenTelemetry,

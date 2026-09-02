@@ -2,6 +2,7 @@
 #include "ErrorReporter.h"
 
 #include <cstdlib>
+#include <cctype>
 #include <drogon/drogon.h>
 #include <iomanip>
 #include <random>
@@ -10,12 +11,29 @@
 namespace observability {
 namespace {
 constexpr const char* kRequestId = "observability.request_id";
+constexpr const char* kTraceparent = "observability.traceparent";
 
 std::string generateRequestId() {
   static thread_local std::mt19937_64 generator(std::random_device{}());
   std::ostringstream stream;
   stream << std::hex << std::setw(16) << std::setfill('0') << generator();
   return stream.str();
+}
+
+std::string randomHex(std::size_t length) {
+  static thread_local std::mt19937_64 generator(std::random_device{}());
+  std::ostringstream stream;
+  while (stream.tellp() < static_cast<std::streamoff>(length)) {
+    stream << std::hex << std::setw(16) << std::setfill('0') << generator();
+  }
+  return stream.str().substr(0, length);
+}
+
+bool validHex(const std::string& value) {
+  for (const auto character : value) {
+    if (!std::isxdigit(static_cast<unsigned char>(character))) return false;
+  }
+  return true;
 }
 } // namespace
 
@@ -35,9 +53,29 @@ std::string requestId(const drogon::HttpRequestPtr& request) {
   return id;
 }
 
+std::string traceparent(const drogon::HttpRequestPtr& request) {
+  if (request->attributes()->find(kTraceparent)) {
+    return request->attributes()->get<std::string>(kTraceparent);
+  }
+
+  const auto supplied = request->getHeader("traceparent");
+  std::string context;
+  if (supplied.size() == 55 && supplied[2] == '-' && supplied[35] == '-' &&
+      supplied[52] == '-' && validHex(supplied.substr(0, 2)) &&
+      validHex(supplied.substr(3, 32)) && validHex(supplied.substr(36, 16)) &&
+      validHex(supplied.substr(53, 2))) {
+    context = supplied;
+  } else {
+    context = "00-" + randomHex(32) + "-" + randomHex(16) + "-01";
+  }
+  request->attributes()->insert(kTraceparent, context);
+  return context;
+}
+
 void Metrics::recordRequest(const drogon::HttpRequestPtr& request) {
   ++requests_;
   requestId(request);
+  traceparent(request);
 }
 
 void Metrics::recordResponse(const drogon::HttpRequestPtr& request,
