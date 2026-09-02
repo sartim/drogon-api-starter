@@ -322,6 +322,7 @@ To run the endpoint checks against an already-running stack:
 
     $ ./scripts/integration_smoke.sh
 
+The CI workflow seeds a disposable test user and then exercises JWT login,
+authenticated create/list/get/update/delete operations, and paginated listing.
 The script does not build images or start containers, so local Docker remains
-optional. Full authentication and CRUD integration coverage will be added
-after a dedicated test-user fixture is introduced.
+optional; it expects an already-running user-service stack and `jq`.
