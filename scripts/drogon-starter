@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  echo "Usage: $0 init <project-name> <empty-directory> [--profile user-service|minimal]" >&2
+  exit 2
+}
+
+[[ ${1:-} == "init" ]] || usage
+project_name=${2:-}
+destination=${3:-}
+profile=${5:-user-service}
+[[ -n "$project_name" && -n "$destination" ]] || usage
+[[ "$profile" == "minimal" || "$profile" == "user-service" ]] || {
+  echo "Profile must be 'user-service' or 'minimal'." >&2
+  exit 2
+}
+
+case "$project_name" in
+  (*[!a-zA-Z0-9_-]*|'')
+    echo "Project name must contain only letters, numbers, '_' or '-'." >&2
+    exit 2
+    ;;
+esac
+
+if [[ -e "$destination" ]] && [[ -n "$(find "$destination" -mindepth 1 -maxdepth 1 -print -quit)" ]]; then
+  echo "Destination must be empty: $destination" >&2
+  exit 1
+fi
+mkdir -p "$destination"
+destination="$(cd "$destination" && pwd)"
+
+source_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [[ "$profile" == "minimal" ]]; then
+  cp -R "$source_root/templates/minimal/." "$destination/"
+else
+  # The user-service profile is generated from the maintained implementation
+  # in this repository, so the starter and the reference service cannot drift.
+  git -C "$source_root" archive --format=tar HEAD | tar -x -C "$destination"
+fi
+find "$destination" -type f -not -path '*/.git/*' -exec sed -i.bak "s/@PROJECT_NAME@/$project_name/g" {} +
+find "$destination" -type f -not -path '*/.git/*' -exec sed -i.bak "s/drogon_user_service/$project_name/g" {} +
+find "$destination" -name '*.bak' -delete
+
+echo "Generated $profile Drogon service: $destination"
+echo "Next steps:"
+echo "  cd $destination"
+if [[ "$profile" == "user-service" ]]; then
+  echo "  cmake --preset user-service && cmake --build --preset user-service && ctest --preset user-service"
+else
+  echo "  cmake --preset dev && cmake --build --preset dev && ctest --preset dev"
+fi

@@ -11,6 +11,24 @@ The REST API is the default. Optional gRPC adapters will share the same
 application services and can be enabled by developers who need internal,
 strongly typed service communication; gRPC will not be a baseline dependency.
 
+## Generate a fresh service
+
+Use the generator when starting a new project instead of copying this
+repository directly. The destination must be new or empty:
+
+    $ ./scripts/drogon-starter init payments-api ../payments-api
+
+By default this generates the maintained user-service profile with JWT
+authentication, users, roles, RBAC, migrations, tests, and the platform
+foundation already present in this repository:
+
+    $ ./scripts/drogon-starter init users-api ../users-api
+
+For a clean Drogon foundation without the user-service batteries, select the
+minimal profile:
+
+    $ ./scripts/drogon-starter init payments-api ../payments-api --profile minimal
+
 ## Supported starter profiles
 
 The repository provides batteries-included profiles without forcing every
