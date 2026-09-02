@@ -71,6 +71,7 @@ aux_source_directory(helpers HELPER_SRC)
 aux_source_directory(schemas SCHEMA_SRC)
 aux_source_directory(observability OBSERVABILITY_SRC)
 aux_source_directory(config CONFIG_SRC)
+aux_source_directory(services SERVICES_SRC)
 drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
                     ${CMAKE_CURRENT_BINARY_DIR})
 # use the following line to create views with namespaces.
@@ -95,7 +96,8 @@ target_sources(${PROJECT_NAME}
                ${HELPER_SRC}
                ${SCHEMA_SRC}
                ${OBSERVABILITY_SRC}
-               ${CONFIG_SRC})
+               ${CONFIG_SRC}
+               ${SERVICES_SRC})
 # ##############################################################################
 # uncomment the following line for dynamically loading views 
 # set_property(TARGET ${PROJECT_NAME} PROPERTY ENABLE_EXPORTS ON)
