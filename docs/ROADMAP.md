@@ -38,8 +38,10 @@ preserving the example code as a complete reference implementation.
 ## Milestone 2: reliable delivery and integration testing
 
 - [ ] Add PostgreSQL and Redis service containers to GitHub Actions
-- [ ] Add integration tests for migrations, authentication, CRUD, pagination,
-      cache fallback, and readiness failures
+- [x] Add CI integration smoke tests for Compose migrations, readiness,
+      documentation, metrics, and unauthenticated protected routes
+- [ ] Add integration tests for authentication, CRUD, pagination, cache
+      fallback, and readiness failures
 - [ ] Keep migrations as an explicit deployment job, never run them from every
       application replica
 - [ ] Pin external dependency versions or commits and document upgrade policy
