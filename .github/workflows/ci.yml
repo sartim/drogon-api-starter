@@ -35,6 +35,11 @@ jobs:
           docker logs user-service-ci
           exit 1
 
+      - name: Verify API documentation endpoints
+        run: |
+          curl --fail --silent http://127.0.0.1:8000/openapi.yaml | grep --fixed-strings --quiet 'openapi: 3.0.3'
+          curl --fail --silent --location http://127.0.0.1:8000/docs | grep --fixed-strings --quiet 'SwaggerUIBundle'
+
       - name: Stop service
         if: always()
         run: docker rm --force user-service-ci || true
