@@ -82,9 +82,9 @@ ctest --preset user-service
 
 ## Hosted documentation
 
-The Markdown documentation is published by GitHub Actions to
+The Markdown documentation is built with MkDocs Material and published by GitHub Actions to
 [GitHub Pages](https://sartim.github.io/drogon-api-starter/). The workflow
-uses the Pages/Jekyll toolchain only; it does not install or build Drogon,
+uses only the documentation toolchain; it does not install or build Drogon,
 PostgreSQL, Redis, or the C++ service locally. Enable GitHub Pages in the
 repository settings with **GitHub Actions** as the source before the first
 deployment.

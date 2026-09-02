@@ -1,0 +1,36 @@
+site_name: Drogon API platform starter
+site_description: A production-oriented Drogon API starter for C++ services.
+site_url: https://sartim.github.io/drogon-api-starter/
+docs_dir: docs
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.instant
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - search.share
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+nav:
+  - Home: index.md
+  - Roadmap: ROADMAP.md
+  - OpenAPI: openapi.yaml
+  - Swagger UI: swagger.html
+plugins:
+  - search

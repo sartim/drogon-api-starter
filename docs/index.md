@@ -1,8 +1,3 @@
----
-layout: default
-title: Drogon API platform starter
----
-
 # Drogon API platform starter
 
 A production-oriented C++ starter for building Drogon APIs with a clear path
