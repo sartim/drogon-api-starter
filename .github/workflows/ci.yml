@@ -39,6 +39,12 @@ jobs:
             REDIS_ENABLED=true \
             docker compose up --detach --no-build
 
+      - name: Seed integration user fixture
+        run: |
+          docker compose exec --no-TTY postgres \
+            psql --set ON_ERROR_STOP=1 -U ci-test -d ci-test \
+            < test/fixtures/integration_user.sql
+
       - name: Run integration smoke tests
         run: ./scripts/integration_smoke.sh
 
