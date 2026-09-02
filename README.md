@@ -16,6 +16,35 @@ sure to create a `.env` file from `.env.example`.
 
 ## Local development setup
 
+List endpoints support page-based pagination: use `page` (default `1`) and
+`page_size` (default `25`, maximum `100`) on `/api/v1/user` and
+`/api/v1/role`. Responses include `results`, `page`, `page_size`, `total`, and
+`has_next`.
+
+Redis caching is optional and disabled by default. Set `REDIS_ENABLED=true`
+when Drogon was built with hiredis and Redis is reachable. List responses are
+cached for 30 seconds; writes invalidate the resource cache. If Redis is
+unavailable, requests continue using PostgreSQL.
+
+To run a complete local stack with Redis:
+
+```sh
+cp .env.example .env
+docker compose up --build
+curl --fail http://localhost:8000/health
+```
+
+For native development, use `./scripts/setup_local.sh` on macOS or
+`./scripts/setup_ubuntu24.sh` on Ubuntu 24.04, then run:
+
+```sh
+ctest --test-dir build --output-on-failure
+```
+
+The setup scripts install hiredis and build Drogon with Redis support, while
+leaving `REDIS_ENABLED=false` in `.env` so PostgreSQL-only development remains
+frictionless. Enable it after starting Redis.
+
 On macOS, the repository includes a bootstrap script for a fresh clone. It
 installs the Homebrew dependencies, fetches Bcrypt.cpp, starts a local
 PostgreSQL service, creates a development database, creates `.env` only when it

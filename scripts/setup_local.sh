@@ -9,7 +9,7 @@ if ! command -v brew >/dev/null 2>&1; then
   exit 1
 fi
 
-brew install jsoncpp libpqxx openssl@3 postgresql@16
+brew install hiredis jsoncpp libpqxx openssl@3 postgresql@16
 
 if [[ ! -d Bcrypt.cpp ]]; then
   git clone --depth 1 https://github.com/hilch/Bcrypt.cpp.git Bcrypt.cpp
@@ -29,6 +29,7 @@ fi
 cmake -S drogon -B drogon/build -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX="$jwt_install_dir" \
   -DBUILD_POSTGRESQL=ON -DBUILD_MYSQL=OFF -DBUILD_SQLITE=OFF \
+  -DBUILD_REDIS=ON \
   -DBUILD_EXAMPLES=OFF -DBUILD_CTL=OFF
 cmake --build drogon/build --parallel
 cmake --install drogon/build
@@ -46,7 +47,12 @@ DB_HOST=127.0.0.1
 DB_PORT=5432
 DB_NAME=drogon_user_service
 DB_USER=$(whoami)
-DB_PASSWORD=
+  DB_PASSWORD=
+REDIS_ENABLED=false
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
 EOF
   echo "Created local .env with a generated development secret."
 fi

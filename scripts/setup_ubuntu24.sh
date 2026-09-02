@@ -13,7 +13,7 @@ sudo apt-get update
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
   build-essential cmake curl git pkg-config \
   libjsoncpp-dev uuid-dev libssl-dev zlib1g-dev libbz2-dev liblzma-dev \
-  libpq-dev libpqxx-dev libbrotli-dev postgresql postgresql-contrib
+  libpq-dev libpqxx-dev libbrotli-dev libhiredis-dev postgresql postgresql-contrib
 
 if command -v systemctl >/dev/null 2>&1; then
   sudo systemctl start postgresql
@@ -41,6 +41,7 @@ local_prefix="$project_dir/.local"
 cmake -S drogon -B drogon/build -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX="$local_prefix" \
   -DBUILD_POSTGRESQL=ON -DBUILD_MYSQL=OFF -DBUILD_SQLITE=OFF \
+  -DBUILD_REDIS=ON \
   -DBUILD_EXAMPLES=OFF -DBUILD_CTL=OFF
 cmake --build drogon/build --parallel
 cmake --install drogon/build
@@ -58,6 +59,11 @@ DB_PORT=5432
 DB_NAME=drogon_user_service
 DB_USER=$(id -un)
 DB_PASSWORD=
+REDIS_ENABLED=false
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
 EOF
   echo "Created local .env. Review database settings before starting the server."
 fi

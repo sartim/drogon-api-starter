@@ -18,6 +18,11 @@ struct AppConfig {
   std::string sentryDsn;
   std::string httpHost{"0.0.0.0"};
   int httpPort{8000};
+  bool redisEnabled{false};
+  std::string redisHost{"127.0.0.1"};
+  int redisPort{6379};
+  std::string redisPassword;
+  int redisDb{0};
 
   static AppConfig fromValues(const std::map<std::string, std::string>& values);
   static AppConfig load(const std::filesystem::path& envFile);

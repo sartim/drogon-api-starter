@@ -37,3 +37,9 @@ add_executable(role_service_test role_service_test.cc
 target_include_directories(role_service_test PRIVATE ${CMAKE_SOURCE_DIR})
 target_link_libraries(role_service_test PRIVATE Drogon::Drogon)
 add_test(NAME RolePublicProjection COMMAND role_service_test)
+
+add_executable(pagination_test pagination_test.cc
+               ${CMAKE_SOURCE_DIR}/pagination/PageRequest.cc)
+target_include_directories(pagination_test PRIVATE ${CMAKE_SOURCE_DIR})
+target_link_libraries(pagination_test PRIVATE Drogon::Drogon)
+add_test(NAME PaginationContract COMMAND pagination_test)

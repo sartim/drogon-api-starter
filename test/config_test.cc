@@ -14,6 +14,10 @@ int main() {
       {"DB_PASSWORD", "password"},
       {"HTTP_HOST", "127.0.0.1"},
       {"HTTP_PORT", "8080"},
+      {"REDIS_ENABLED", "true"},
+      {"REDIS_HOST", "cache"},
+      {"REDIS_PORT", "6380"},
+      {"REDIS_DB", "2"},
   };
 
   const auto config = config::AppConfig::fromValues(values);
@@ -27,6 +31,12 @@ int main() {
   const auto drogonConfig = config.toDrogonJson();
   if (drogonConfig["db_clients"][0]["port"].asInt() != 5433) {
     std::cerr << "Drogon configuration was not generated correctly\n";
+    return 1;
+  }
+  if (!config.redisEnabled || config.redisHost != "cache" ||
+      config.redisPort != 6380 || config.redisDb != 2 ||
+      drogonConfig["redis_clients"][0]["host"].asString() != "cache") {
+    std::cerr << "Redis configuration was not generated correctly\n";
     return 1;
   }
 

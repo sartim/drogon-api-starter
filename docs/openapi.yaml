@@ -44,7 +44,7 @@ paths:
         - $ref: '#/components/parameters/PageSize'
       responses:
         '200':
-          description: Users returned
+          description: Paginated users returned
         '401':
           description: Authentication required
     post:
@@ -89,9 +89,12 @@ paths:
       summary: List roles
       security:
         - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
       responses:
         '200':
-          description: Roles returned
+          description: Paginated roles returned
     post:
       summary: Create a role
       security:

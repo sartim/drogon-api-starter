@@ -1,10 +1,13 @@
 #include "RoleController.h"
 #include "models/Roles.h"
 #include "services/RoleService.h"
+#include "cache/RedisCache.h"
+#include "pagination/PageResponse.h"
 #include <drogon/HttpResponse.h>
 #include <drogon/HttpSimpleController.h>
 #include <drogon/HttpViewData.h>
 #include <drogon/orm/Mapper.h>
+#include <sstream>
 
 using namespace std;
 using namespace drogon;
@@ -30,34 +33,24 @@ void RoleController::getRoles(
 
   if (client) {
     try {
-      // Get query parameters
-      auto query = req->getParameters();
-      int page = 1;
-      auto page_it = query.find("page");
-      if (page_it != query.end()) {
-        page = stoi(page_it->second);
+      const auto pageRequest = pagination::PageRequest::from(req);
+      const auto key = pageRequest.cacheKey("roles");
+      if (const auto cached = cache::RedisCache::get(key); cached) {
+        Json::Value cachedResponse;
+        Json::CharReaderBuilder reader;
+        std::string errors;
+        std::istringstream input(*cached);
+        if (Json::parseFromStream(reader, input, &cachedResponse, &errors)) {
+          callback(handleResponse(cachedResponse, k200OK));
+          return;
+        }
       }
-      int page_size = 25;
-      auto page_size_it = query.find("page_size");
-      if (page_size_it != query.end()) {
-        page_size = stoi(page_size_it->second);
-      }
-
-      if (page < 1 || page_size < 1 || page_size > 100) {
-        Json::Value error;
-        error["error"] = "page must be positive and page_size must be between 1 and 100";
-        callback(handleResponse(error, k400BadRequest));
-        return;
-      }
-
       services::RoleService roleService(client);
-      auto roles = roleService.listRoles(page, page_size);
-      Json::Value RolesJson(Json::arrayValue);
-      for (const auto &role : roles) {
-        RolesJson.append(services::RoleService::toPublicJson(role));
-      }
-      Json::Value roleResults;
-      roleResults["results"] = RolesJson;
+      const auto roles = roleService.listRoles(pageRequest);
+      const auto roleResults = pagination::toJson(
+          roles, services::RoleService::toPublicJson);
+      Json::StreamWriterBuilder writer;
+      cache::RedisCache::set(key, Json::writeString(writer, roleResults), 30);
       shared_ptr<HttpResponse> response = handleResponse(roleResults, k200OK);
       callback(response);
     } catch (const exception &e) {
@@ -122,6 +115,7 @@ void RoleController::createRole(
     try {
       services::RoleService roleService(client);
       const auto role = roleService.createRole(jsonBody ? *jsonBody : Json::Value());
+      cache::RedisCache::erasePrefix("roles:");
       callback(handleResponse(role.toJson(), k201Created));
     } catch (const invalid_argument &) {
       Json::Value error;
@@ -159,6 +153,7 @@ void RoleController::updateRoleById(
       services::RoleService roleService(client);
       const auto role = roleService.updateRole(
           roleId, jsonBody ? *jsonBody : Json::Value());
+      cache::RedisCache::erasePrefix("roles:");
       shared_ptr<HttpResponse> response = handleResponse(role.toJson(), k200OK);
       callback(response);
     } catch (const invalid_argument &) {
@@ -192,6 +187,7 @@ void RoleController::deleteRoleById(
   if (client) {
     services::RoleService roleService(client);
     auto role = roleService.deleteRole(roleId);
+    cache::RedisCache::erasePrefix("roles:");
 
     if (role) {
       auto resp = HttpResponse::newHttpResponse();

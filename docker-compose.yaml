@@ -16,6 +16,11 @@ services:
       - SENTRY_DSN=${SENTRY_DSN}
       - HTTP_HOST=${HTTP_HOST:-0.0.0.0}
       - HTTP_PORT=${HTTP_PORT:-8000}
+      - REDIS_ENABLED=${REDIS_ENABLED:-true}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_DB=${REDIS_DB:-0}
     image: user_service:latest
     command: /app/drogon_user_service --action=run-server
     healthcheck:
@@ -24,3 +29,14 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
