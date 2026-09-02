@@ -204,7 +204,8 @@ void dropTables() {}
 
 void runServer(const config::AppConfig &appConfig) {
   cache::RedisCache::configure(appConfig.redisEnabled);
-  observability::configure(appConfig.sentryDsn);
+  observability::configure(appConfig.errorTrackingProvider,
+                           appConfig.sentryDsn);
 
   app().registerPreRoutingAdvice([](const HttpRequestPtr &request) {
     const auto id = observability::requestId(request);

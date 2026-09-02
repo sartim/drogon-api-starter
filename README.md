@@ -197,19 +197,21 @@ Each request receives an `X-Request-ID` response header. An incoming
 start/completion logs include the ID, method, path, and response status, which
 provides a lightweight trace across application logs.
 
-Sentry is optional. If `SENTRY_DSN` is not set, the service logs that Sentry is
-disabled and continues normally. A DSN is detected for future error-tracking
-integration, but this build does not require or link the Sentry SDK:
+Error tracking is provider-neutral and fail-open. The application depends on
+the `ErrorReporter` interface, while provider SDKs remain optional adapters.
+Set `ERROR_TRACKING_PROVIDER=none` for the no-op default. Sentry, OpenTelemetry,
+Datadog, and other adapters can be added without changing application or
+service code. `SENTRY_DSN` is retained as an optional Sentry adapter setting:
 
     $ export SENTRY_DSN="https://examplePublicKey@o0.ingest.sentry.io/0"
 
 Alternatively, add the value to a local `.env` copied from `.env.example`.
 Leave `SENTRY_DSN` empty when Sentry is not available.
 
-Keep the DSN in the deployment secret store rather than committing it to
-`.env` or source control. The current error-tracking hook is intentionally
-fail-open; integrating the Sentry SDK can be added once the deployment
-environment provides the required credentials and transport policy.
+Keep provider credentials in the deployment secret store rather than committing
+them to `.env` or source control. Unsupported providers currently fall back to
+the no-op reporter and do not prevent startup; provider adapters will be added
+behind separate optional build dependencies.
 
 ## Formatting and linting
 

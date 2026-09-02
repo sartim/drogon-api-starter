@@ -17,7 +17,8 @@ target_compile_definitions(api_docs_test
 add_test(NAME ApiDocumentationFiles COMMAND api_docs_test)
 
 add_executable(observability_test observability_test.cc
-               ${CMAKE_SOURCE_DIR}/observability/Observability.cc)
+               ${CMAKE_SOURCE_DIR}/observability/Observability.cc
+               ${CMAKE_SOURCE_DIR}/observability/ErrorReporter.cc)
 target_include_directories(observability_test PRIVATE ${CMAKE_SOURCE_DIR})
 target_link_libraries(observability_test PRIVATE Drogon::Drogon)
 add_test(NAME ObservabilityFoundation COMMAND observability_test)

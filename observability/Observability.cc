@@ -1,4 +1,5 @@
 #include "Observability.h"
+#include "ErrorReporter.h"
 
 #include <cstdlib>
 #include <drogon/drogon.h>
@@ -62,16 +63,17 @@ std::string Metrics::prometheus() const {
   return output.str();
 }
 
-void configure(const std::string& configuredDsn) {
+void configure(const std::string& configuredProvider,
+               const std::string& configuredDsn) {
   const char* environmentDsn = std::getenv("SENTRY_DSN");
   const auto& sentryDsn = configuredDsn.empty() && environmentDsn != nullptr
                               ? std::string(environmentDsn)
                               : configuredDsn;
-  if (sentryDsn.empty()) {
-    LOG_INFO << "Sentry is disabled: SENTRY_DSN is not configured";
-  } else {
-    LOG_INFO << "Sentry DSN detected; error reporting adapter is not enabled in this build";
-  }
+  const char* environmentProvider = std::getenv("ERROR_TRACKING_PROVIDER");
+  const auto& provider = configuredProvider.empty() && environmentProvider != nullptr
+                             ? std::string(environmentProvider)
+                             : configuredProvider;
+  configureErrorReporter(provider, sentryDsn);
 }
 
 } // namespace observability

@@ -12,6 +12,7 @@ int main() {
       {"DB_NAME", "users"},
       {"DB_USER", "tester"},
       {"DB_PASSWORD", "password"},
+      {"ERROR_TRACKING_PROVIDER", "none"},
       {"HTTP_HOST", "127.0.0.1"},
       {"HTTP_PORT", "8080"},
       {"REDIS_ENABLED", "true"},
@@ -37,6 +38,10 @@ int main() {
       config.redisPort != 6380 || config.redisDb != 2 ||
       drogonConfig["redis_clients"][0]["host"].asString() != "cache") {
     std::cerr << "Redis configuration was not generated correctly\n";
+    return 1;
+  }
+  if (config.errorTrackingProvider != "none") {
+    std::cerr << "error tracking provider was not parsed correctly\n";
     return 1;
   }
 
