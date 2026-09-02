@@ -1,10 +1,15 @@
-# User Service
+# Drogon API platform starter
 
-[![Language](https://img.shields.io/badge/language-cpp-green.svg)](https://github.com/sartim/drogon_user_service)
-[![Build Status](https://github.com/sartim/drogon_user_service/workflows/build/badge.svg)](https://github.com/sartim/drogon_user_service)
+[![Language](https://img.shields.io/badge/language-cpp-green.svg)](https://github.com/sartim/drogon-api-starter)
+[![Build Status](https://github.com/sartim/drogon-api-starter/workflows/build/badge.svg)](https://github.com/sartim/drogon-api-starter)
 
-User service running on Drogon Framework which handles RBAC management. Make
-sure to create a `.env` file from `.env.example`.
+Production-oriented Drogon API starter with PostgreSQL, optional Redis,
+authentication, migrations, OpenAPI, Docker Compose, observability, CI, and a
+user/RBAC example module. See the [platform roadmap](docs/ROADMAP.md).
+
+The REST API is the default. Optional gRPC adapters will share the same
+application services and can be enabled by developers who need internal,
+strongly typed service communication; gRPC will not be a baseline dependency.
 
 ## Requirements
 
