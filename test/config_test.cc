@@ -9,15 +9,20 @@ int main() {
       {"SECRET_KEY", "test-secret"},
       {"DB_HOST", "localhost"},
       {"DB_PORT", "5433"},
+      {"DB_CONNECTION_POOL_SIZE", "6"},
+      {"DB_QUERY_TIMEOUT_SECONDS", "7.5"},
       {"DB_NAME", "users"},
       {"DB_USER", "tester"},
       {"DB_PASSWORD", "password"},
       {"ERROR_TRACKING_PROVIDER", "none"},
       {"HTTP_HOST", "127.0.0.1"},
       {"HTTP_PORT", "8080"},
+      {"HTTP_IDLE_CONNECTION_TIMEOUT_SECONDS", "45"},
       {"REDIS_ENABLED", "true"},
       {"REDIS_HOST", "cache"},
       {"REDIS_PORT", "6380"},
+      {"REDIS_CONNECTION_POOL_SIZE", "3"},
+      {"REDIS_COMMAND_TIMEOUT_SECONDS", "1.5"},
       {"REDIS_DB", "2"},
   };
 
@@ -34,6 +39,14 @@ int main() {
     std::cerr << "Drogon configuration was not generated correctly\n";
     return 1;
   }
+  if (config.dbConnectionPoolSize != 6 ||
+      config.dbQueryTimeoutSeconds != 7.5 ||
+      config.idleConnectionTimeoutSeconds != 45 ||
+      drogonConfig["db_clients"][0]["connection_number"].asInt() != 6 ||
+      drogonConfig["db_clients"][0]["timeout"].asDouble() != 7.5) {
+    std::cerr << "pool and timeout configuration was not generated correctly\n";
+    return 1;
+  }
   if (!config.redisEnabled || config.redisHost != "cache" ||
       config.redisPort != 6380 || config.redisDb != 2 ||
       drogonConfig["redis_clients"][0]["host"].asString() != "cache") {
@@ -42,6 +55,13 @@ int main() {
   }
   if (config.errorTrackingProvider != "none") {
     std::cerr << "error tracking provider was not parsed correctly\n";
+    return 1;
+  }
+  if (config.redisConnectionPoolSize != 3 ||
+      config.redisCommandTimeoutSeconds != 1.5 ||
+      drogonConfig["redis_clients"][0]["connection_number"].asInt() != 3 ||
+      drogonConfig["redis_clients"][0]["timeout"].asDouble() != 1.5) {
+    std::cerr << "Redis pool and timeout configuration was not generated correctly\n";
     return 1;
   }
 
