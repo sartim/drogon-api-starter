@@ -62,9 +62,12 @@ std::string Metrics::prometheus() const {
   return output.str();
 }
 
-void configure() {
-  const char* sentryDsn = std::getenv("SENTRY_DSN");
-  if (sentryDsn == nullptr || std::string(sentryDsn).empty()) {
+void configure(const std::string& configuredDsn) {
+  const char* environmentDsn = std::getenv("SENTRY_DSN");
+  const auto& sentryDsn = configuredDsn.empty() && environmentDsn != nullptr
+                              ? std::string(environmentDsn)
+                              : configuredDsn;
+  if (sentryDsn.empty()) {
     LOG_INFO << "Sentry is disabled: SENTRY_DSN is not configured";
   } else {
     LOG_INFO << "Sentry DSN detected; error reporting adapter is not enabled in this build";

@@ -203,8 +203,8 @@ void registerRoutes() {
 
 void dropTables() {}
 
-void runServer() {
-  observability::configure();
+void runServer(const string &sentryDsn) {
+  observability::configure(sentryDsn);
 
   app().registerPreRoutingAdvice([](const HttpRequestPtr &request) {
     const auto id = observability::requestId(request);
@@ -367,7 +367,7 @@ int main(int argc, char *argv[]) {
   // Check the action and perform the corresponding operation
   if (key == "--action") {
     if (value == "run-server") {
-      runServer();
+      runServer(envVariables["SENTRY_DSN"]);
     } else if (value == "create-tables") {
       createTables(connectionString);
     } else if (value == "drop-tables") {

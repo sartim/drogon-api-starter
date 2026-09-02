@@ -107,6 +107,9 @@ integration, but this build does not require or link the Sentry SDK:
 
     $ export SENTRY_DSN="https://examplePublicKey@o0.ingest.sentry.io/0"
 
+Alternatively, add the value to a local `.env` copied from `.env.example`.
+Leave `SENTRY_DSN` empty when Sentry is not available.
+
 Keep the DSN in the deployment secret store rather than committing it to
 `.env` or source control. The current error-tracking hook is intentionally
 fail-open; integrating the Sentry SDK can be added once the deployment
