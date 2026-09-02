@@ -12,6 +12,8 @@ struct AppConfig {
   std::string secretKey;
   std::string dbHost;
   int dbPort{5432};
+  int dbConnectionPoolSize{4};
+  double dbQueryTimeoutSeconds{10.0};
   std::string dbName;
   std::string dbUser;
   std::string dbPassword;
@@ -22,8 +24,13 @@ struct AppConfig {
   bool redisEnabled{false};
   std::string redisHost{"127.0.0.1"};
   int redisPort{6379};
+  int redisConnectionPoolSize{2};
+  double redisCommandTimeoutSeconds{1.0};
   std::string redisPassword;
   int redisDb{0};
+  int idleConnectionTimeoutSeconds{60};
+  int rateLimitRequests{0};
+  int rateLimitWindowSeconds{60};
 
   static AppConfig fromValues(const std::map<std::string, std::string>& values);
   static AppConfig load(const std::filesystem::path& envFile);

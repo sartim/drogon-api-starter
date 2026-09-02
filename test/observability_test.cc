@@ -1,10 +1,12 @@
 #include "observability/Observability.h"
 #include "observability/ErrorReporter.h"
+#include "observability/RateLimiter.h"
 
 #include <drogon/HttpRequest.h>
 
 #include <iostream>
 #include <stdexcept>
+#include <chrono>
 
 namespace {
 class RecordingReporter final : public observability::ErrorReporter {
@@ -87,6 +89,13 @@ int main() {
   if (recordingReporter->captures != 1 ||
       recordingReporter->lastRequestId != "adapter-request") {
     std::cerr << "registered error reporter did not receive the event\n";
+    return 1;
+  }
+
+  observability::RateLimiter limiter(2, std::chrono::seconds(60));
+  if (!limiter.allow("client") || !limiter.allow("client") ||
+      limiter.allow("client") || !limiter.allow("other")) {
+    std::cerr << "rate limiter did not enforce per-client limits\n";
     return 1;
   }
 

@@ -35,6 +35,32 @@ int number(const std::map<std::string, std::string>& values,
   }
 }
 
+double seconds(const std::map<std::string, std::string>& values,
+               const std::string& key, double fallback) {
+  const auto value = values.find(key);
+  if (value == values.end() || value->second.empty()) return fallback;
+  try {
+    const auto parsed = std::stod(value->second);
+    if (parsed <= 0.0 || parsed > 3600.0) throw std::out_of_range("seconds");
+    return parsed;
+  } catch (const std::exception&) {
+    throw std::runtime_error("Invalid duration configuration: " + key);
+  }
+}
+
+int nonNegativeNumber(const std::map<std::string, std::string>& values,
+                      const std::string& key, int fallback) {
+  const auto value = values.find(key);
+  if (value == values.end() || value->second.empty()) return fallback;
+  try {
+    const auto parsed = std::stoi(value->second);
+    if (parsed < 0 || parsed > 65535) throw std::out_of_range("number range");
+    return parsed;
+  } catch (const std::exception&) {
+    throw std::runtime_error("Invalid numeric configuration: " + key);
+  }
+}
+
 bool flag(const std::map<std::string, std::string>& values,
           const std::string& key, bool fallback) {
   const auto value = values.find(key);
@@ -97,6 +123,8 @@ AppConfig AppConfig::fromValues(const std::map<std::string, std::string>& values
   config.secretKey = required(values, "SECRET_KEY");
   config.dbHost = required(values, "DB_HOST");
   config.dbPort = number(values, "DB_PORT", 5432);
+  config.dbConnectionPoolSize = number(values, "DB_CONNECTION_POOL_SIZE", 4);
+  config.dbQueryTimeoutSeconds = seconds(values, "DB_QUERY_TIMEOUT_SECONDS", 10.0);
   config.dbName = required(values, "DB_NAME");
   config.dbUser = required(values, "DB_USER");
   config.dbPassword = values.count("DB_PASSWORD") ? values.at("DB_PASSWORD") : "";
@@ -109,7 +137,17 @@ AppConfig AppConfig::fromValues(const std::map<std::string, std::string>& values
   config.redisEnabled = flag(values, "REDIS_ENABLED", false);
   config.redisHost = values.count("REDIS_HOST") ? values.at("REDIS_HOST") : "127.0.0.1";
   config.redisPort = number(values, "REDIS_PORT", 6379);
+  config.redisConnectionPoolSize =
+      number(values, "REDIS_CONNECTION_POOL_SIZE", 2);
+  config.redisCommandTimeoutSeconds =
+      seconds(values, "REDIS_COMMAND_TIMEOUT_SECONDS", 1.0);
   config.redisPassword = values.count("REDIS_PASSWORD") ? values.at("REDIS_PASSWORD") : "";
+  config.idleConnectionTimeoutSeconds =
+      number(values, "HTTP_IDLE_CONNECTION_TIMEOUT_SECONDS", 60);
+  config.rateLimitRequests =
+      nonNegativeNumber(values, "RATE_LIMIT_REQUESTS", 0);
+  config.rateLimitWindowSeconds =
+      number(values, "RATE_LIMIT_WINDOW_SECONDS", 60);
   if (values.count("REDIS_DB") && !values.at("REDIS_DB").empty()) {
     try {
       config.redisDb = std::stoi(values.at("REDIS_DB"));
@@ -126,7 +164,11 @@ AppConfig AppConfig::load(const std::filesystem::path& envFile) {
   for (const auto& key : {"SECRET_KEY", "DB_HOST", "DB_PORT", "DB_NAME",
                           "DB_USER", "DB_PASSWORD", "SENTRY_DSN",
                           "ERROR_TRACKING_PROVIDER", "HTTP_HOST",
-                          "HTTP_PORT", "REDIS_ENABLED", "REDIS_HOST", "REDIS_PORT",
+                          "HTTP_PORT", "HTTP_IDLE_CONNECTION_TIMEOUT_SECONDS",
+                          "RATE_LIMIT_REQUESTS", "RATE_LIMIT_WINDOW_SECONDS",
+                          "DB_CONNECTION_POOL_SIZE", "DB_QUERY_TIMEOUT_SECONDS",
+                          "REDIS_ENABLED", "REDIS_HOST", "REDIS_PORT",
+                          "REDIS_CONNECTION_POOL_SIZE", "REDIS_COMMAND_TIMEOUT_SECONDS",
                           "REDIS_PASSWORD", "REDIS_DB"}) {
     overrideFromEnvironment(values, key);
   }
@@ -146,7 +188,8 @@ Json::Value AppConfig::toDrogonJson() const {
   client["user"] = dbUser;
   client["passwd"] = dbPassword;
   client["is_fast"] = false;
-  client["connection_number"] = 1;
+  client["connection_number"] = dbConnectionPoolSize;
+  client["timeout"] = dbQueryTimeoutSeconds;
   client["filename"] = "";
   if (redisEnabled) {
     config["redis_clients"] = Json::arrayValue;
@@ -156,8 +199,8 @@ Json::Value AppConfig::toDrogonJson() const {
     redis["port"] = redisPort;
     redis["passwd"] = redisPassword;
     redis["db"] = redisDb;
-    redis["connection_number"] = 2;
-    redis["timeout"] = 0.25;
+    redis["connection_number"] = redisConnectionPoolSize;
+    redis["timeout"] = redisCommandTimeoutSeconds;
   }
   return config;
 }

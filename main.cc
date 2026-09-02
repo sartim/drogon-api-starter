@@ -7,6 +7,7 @@
 #include "cache/RedisCache.h"
 #include "models/Users.h"
 #include "observability/Observability.h"
+#include "observability/RateLimiter.h"
 #include "tables/PermissionTable.h"
 #include "tables/RolePermissionTable.h"
 #include "tables/RoleTable.h"
@@ -14,6 +15,7 @@
 #include "tables/UserTable.h"
 #include <drogon/HttpAppFramework.h>
 #include <filesystem>
+#include <chrono>
 #include <iostream>
 #include <stdexcept>
 
@@ -210,6 +212,9 @@ void registerRoutes() {
 void dropTables() {}
 
 void runServer(const config::AppConfig &appConfig) {
+  observability::RateLimiter rateLimiter(
+      static_cast<size_t>(appConfig.rateLimitRequests),
+      std::chrono::seconds(appConfig.rateLimitWindowSeconds));
   cache::RedisCache::configure(appConfig.redisEnabled);
   observability::configure(appConfig.errorTrackingProvider,
                            appConfig.sentryDsn);
@@ -220,6 +225,22 @@ void runServer(const config::AppConfig &appConfig) {
     LOG_INFO << "request_started request_id=" << id
              << " method=" << request->methodString()
              << " path=" << request->path();
+  });
+
+  app().registerSyncAdvice([&rateLimiter, &appConfig](
+                                const HttpRequestPtr &request) {
+    const auto &path = request->path();
+    if (path == "/health" || path == "/ready" || path == "/metrics" ||
+        rateLimiter.allow(request->peerAddr().toIpPort())) {
+      return HttpResponsePtr{};
+    }
+    Json::Value body;
+    body["error"] = "rate limit exceeded";
+    auto response = HttpResponse::newHttpJsonResponse(body);
+    response->setStatusCode(k429TooManyRequests);
+    response->addHeader("Retry-After",
+                        std::to_string(appConfig.rateLimitWindowSeconds));
+    return response;
   });
 
   app().registerPostHandlingAdvice(
@@ -241,6 +262,16 @@ void runServer(const config::AppConfig &appConfig) {
   drogon::app().setLogLevel(trantor::Logger::kTrace);
   const auto port = appConfig.httpPort;
   // Set HTTP listener address and port
+  drogon::app().setIdleConnectionTimeout(
+      static_cast<size_t>(appConfig.idleConnectionTimeoutSeconds));
+  drogon::app().setTermSignalHandler([] {
+    LOG_INFO << "shutdown_requested signal=TERM";
+    drogon::app().quit();
+  });
+  drogon::app().setIntSignalHandler([] {
+    LOG_INFO << "shutdown_requested signal=INT";
+    drogon::app().quit();
+  });
   drogon::app().addListener(appConfig.httpHost, port);
 
   // Load Drogon configuration directly from the values loaded from .env.

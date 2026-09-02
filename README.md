@@ -101,6 +101,23 @@ when Drogon was built with hiredis and Redis is reachable. List responses are
 cached for 30 seconds; writes invalidate the resource cache. If Redis is
 unavailable, requests continue using PostgreSQL.
 
+Connection-pool and timeout settings are configurable through `.env`:
+`DB_CONNECTION_POOL_SIZE`, `DB_QUERY_TIMEOUT_SECONDS`,
+`REDIS_CONNECTION_POOL_SIZE`, `REDIS_COMMAND_TIMEOUT_SECONDS`, and
+`HTTP_IDLE_CONNECTION_TIMEOUT_SECONDS`. The defaults are conservative for
+local development; production values should be sized against database limits,
+worker count, and expected concurrency.
+
+Set `RATE_LIMIT_REQUESTS` to a positive value to enable the built-in sliding
+window limiter per client address; it is disabled by default (`0`). Health,
+readiness, and metrics endpoints are excluded so orchestration can continue to
+operate. This limiter is process-local and should be replaced or fronted by a
+distributed gateway/Redis policy when running multiple replicas.
+
+Drogon handles `SIGTERM` and `SIGINT` by stopping the application event loop
+through its graceful `quit()` lifecycle. Deployments should still provide a
+termination grace period longer than the expected in-flight request duration.
+
 To run a complete local stack with Redis:
 
 ```sh
