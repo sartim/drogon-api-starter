@@ -1,7 +1,10 @@
 include(FetchContent)
 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.16)
 project(drogon_user_service CXX)
+
+include(CTest)
+enable_testing()
 
 set(BCRYPT_CPP_INCLUDE_PATH "Bcrypt.cpp/include")
 set(CMAKE_C_ARCHIVE_CREATE "<CMAKE_AR> qc <TARGET> <LINK_FLAGS> <OBJECTS>")
