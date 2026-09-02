@@ -29,6 +29,14 @@ existing `.env`. To run the service itself after setup:
     $ cmake --build build --parallel
     $ ./build/drogon_user_service --action=run-server
 
+CLion can use the same checkout after running the setup script. Open the
+repository as a CMake project and select the `Debug` profile; CMake discovers
+the Drogon and jwt-cpp installations under `.local` automatically. If using a
+manual CLion profile, the equivalent configuration is:
+
+    Generator: Ninja
+    CMake options: -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
 To create the application tables in the local database:
 
     $ ./build/drogon_user_service --action=create-tables

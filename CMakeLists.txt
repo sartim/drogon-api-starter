@@ -33,6 +33,13 @@ endif ()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Native setup scripts install Drogon and jwt-cpp into .local. Keep CLion and
+# command-line CMake builds self-contained without requiring a manual
+# CMAKE_PREFIX_PATH setting.
+if (EXISTS "${CMAKE_SOURCE_DIR}/.local/lib/cmake/Drogon/DrogonConfig.cmake")
+    list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/.local")
+endif ()
+
 add_executable(${PROJECT_NAME} main.cc)
 
 # ##############################################################################
@@ -97,7 +104,12 @@ find_package(OpenSSL REQUIRED)
 target_include_directories(${PROJECT_NAME} PRIVATE ${OPENSSL_INCLUDE_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${OPENSSL_LIBRARIES})
 
-find_package(jwt-cpp REQUIRED)
+if (EXISTS "${CMAKE_SOURCE_DIR}/.local/cmake/jwt-cpp-config.cmake")
+    find_package(jwt-cpp CONFIG REQUIRED
+                 PATHS "${CMAKE_SOURCE_DIR}/.local/cmake" NO_DEFAULT_PATH)
+else ()
+    find_package(jwt-cpp CONFIG REQUIRED)
+endif ()
 target_link_libraries(${PROJECT_NAME} PRIVATE jwt-cpp::jwt-cpp)
 
 #find_package(AWSSDK CONFIG COMPONENTS core dynamodb kinesis s3 REQUIRED)
