@@ -58,6 +58,16 @@ package manager. Then clone Bcrypt.cpp into the project root and use the same
 `cmake`, `cmake --build`, and `ctest` commands. Docker remains available for a
 fully isolated Linux build.
 
+For Ubuntu 24.04, the repository provides an automated native setup:
+
+    $ ./scripts/setup_ubuntu24.sh
+
+It installs the required apt packages, builds Drogon with PostgreSQL support,
+builds jwt-cpp and Bcrypt.cpp from their repositories, then runs the local
+unit tests. It does not start the server; start it with:
+
+    $ ./build/drogon_user_service --action=run-server
+
 ## Create .env file
 
     SECRET_KEY={SECRET_KEY}
