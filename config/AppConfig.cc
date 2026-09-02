@@ -35,6 +35,14 @@ int number(const std::map<std::string, std::string>& values,
   }
 }
 
+bool flag(const std::map<std::string, std::string>& values,
+          const std::string& key, bool fallback) {
+  const auto value = values.find(key);
+  if (value == values.end() || value->second.empty()) return fallback;
+  return value->second == "1" || value->second == "true" ||
+         value->second == "TRUE";
+}
+
 std::map<std::string, std::string> readEnvFile(
     const std::filesystem::path& envFile) {
   std::ifstream file(envFile);
@@ -95,6 +103,18 @@ AppConfig AppConfig::fromValues(const std::map<std::string, std::string>& values
   config.sentryDsn = values.count("SENTRY_DSN") ? values.at("SENTRY_DSN") : "";
   config.httpHost = values.count("HTTP_HOST") ? values.at("HTTP_HOST") : "0.0.0.0";
   config.httpPort = number(values, "HTTP_PORT", 8000);
+  config.redisEnabled = flag(values, "REDIS_ENABLED", false);
+  config.redisHost = values.count("REDIS_HOST") ? values.at("REDIS_HOST") : "127.0.0.1";
+  config.redisPort = number(values, "REDIS_PORT", 6379);
+  config.redisPassword = values.count("REDIS_PASSWORD") ? values.at("REDIS_PASSWORD") : "";
+  if (values.count("REDIS_DB") && !values.at("REDIS_DB").empty()) {
+    try {
+      config.redisDb = std::stoi(values.at("REDIS_DB"));
+      if (config.redisDb < 0) throw std::out_of_range("redis db");
+    } catch (const std::exception&) {
+      throw std::runtime_error("Invalid numeric configuration: REDIS_DB");
+    }
+  }
   return config;
 }
 
@@ -102,7 +122,8 @@ AppConfig AppConfig::load(const std::filesystem::path& envFile) {
   auto values = readEnvFile(envFile);
   for (const auto& key : {"SECRET_KEY", "DB_HOST", "DB_PORT", "DB_NAME",
                           "DB_USER", "DB_PASSWORD", "SENTRY_DSN", "HTTP_HOST",
-                          "HTTP_PORT"}) {
+                          "HTTP_PORT", "REDIS_ENABLED", "REDIS_HOST", "REDIS_PORT",
+                          "REDIS_PASSWORD", "REDIS_DB"}) {
     overrideFromEnvironment(values, key);
   }
   return fromValues(values);
@@ -123,6 +144,17 @@ Json::Value AppConfig::toDrogonJson() const {
   client["is_fast"] = false;
   client["connection_number"] = 1;
   client["filename"] = "";
+  if (redisEnabled) {
+    config["redis_clients"] = Json::arrayValue;
+    auto& redis = config["redis_clients"][0];
+    redis["name"] = "default";
+    redis["host"] = redisHost;
+    redis["port"] = redisPort;
+    redis["passwd"] = redisPassword;
+    redis["db"] = redisDb;
+    redis["connection_number"] = 2;
+    redis["timeout"] = 0.25;
+  }
   return config;
 }
 

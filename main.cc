@@ -2,6 +2,7 @@
 #include "controllers/RoleController.h"
 #include "controllers/UserController.h"
 #include "config/AppConfig.h"
+#include "cache/RedisCache.h"
 #include "models/Users.h"
 #include "observability/Observability.h"
 #include "tables/PermissionTable.h"
@@ -181,6 +182,7 @@ void registerRoutes() {
 void dropTables() {}
 
 void runServer(const config::AppConfig &appConfig) {
+  cache::RedisCache::configure(appConfig.redisEnabled);
   observability::configure(appConfig.sentryDsn);
 
   app().registerPreRoutingAdvice([](const HttpRequestPtr &request) {

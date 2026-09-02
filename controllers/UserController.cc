@@ -2,10 +2,13 @@
 #include "bcrypt.h"
 #include "models/Users.h"
 #include "services/UserService.h"
+#include "cache/RedisCache.h"
+#include "pagination/PageResponse.h"
 #include <drogon/HttpResponse.h>
 #include <drogon/HttpSimpleController.h>
 #include <drogon/HttpViewData.h>
 #include <drogon/orm/Mapper.h>
+#include <sstream>
 
 using namespace std;
 using namespace drogon;
@@ -31,28 +34,25 @@ void UserController::getUsers(
 
   if (client) {
     try {
-      // Get query parameters
-      auto query = req->getParameters();
-      int page = 1;
-      auto page_it = query.find("page");
-      if (page_it != query.end()) {
-        page = stoi(page_it->second);
+      const auto pageRequest = pagination::PageRequest::from(req);
+      const auto key = pageRequest.cacheKey("users");
+      if (const auto cached = cache::RedisCache::get(key); cached) {
+        Json::Value cachedResponse;
+        Json::CharReaderBuilder reader;
+        std::string errors;
+        std::istringstream input(*cached);
+        if (Json::parseFromStream(reader, input, &cachedResponse, &errors)) {
+          callback(handleResponse(cachedResponse, k200OK));
+          return;
+        }
       }
-      int page_size = 25;
-      auto page_size_it = query.find("page_size");
-      if (page_size_it != query.end()) {
-        page_size = stoi(page_size_it->second);
-      }
-
       services::UserService userService(client);
-      auto users = userService.listUsers(page, page_size);
-      Json::Value usersJson(Json::arrayValue);
-      for (const auto &user : users) {
-        usersJson.append(services::UserService::toPublicJson(user));
-      }
-      Json::Value userResults;
-      userResults["results"] = usersJson;
-      shared_ptr<HttpResponse> response = handleResponse(usersJson, k200OK);
+      const auto users = userService.listUsers(pageRequest);
+      const auto userResults = pagination::toJson(
+          users, services::UserService::toPublicJson);
+      Json::StreamWriterBuilder writer;
+      cache::RedisCache::set(key, Json::writeString(writer, userResults), 30);
+      shared_ptr<HttpResponse> response = handleResponse(userResults, k200OK);
       callback(response);
     } catch (const invalid_argument &e) {
       Json::Value error;
@@ -119,6 +119,7 @@ void UserController::createUser(
     try {
       services::UserService userService(client);
       auto user = userService.createUser(jsonBody ? *jsonBody : Json::Value());
+      cache::RedisCache::erasePrefix("users:");
       callback(handleResponse(user.toJson(), k201Created));
     } catch (const invalid_argument &) {
       Json::Value error;
@@ -153,6 +154,7 @@ void UserController::updateUserById(
       services::UserService userService(client);
       auto user = userService.updateUser(
           userId, jsonBody ? *jsonBody : Json::Value());
+      cache::RedisCache::erasePrefix("users:");
       shared_ptr<HttpResponse> response = handleResponse(user.toJson(), k200OK);
       callback(response);
     } catch (const invalid_argument &) {
@@ -187,6 +189,7 @@ void UserController::deleteUserById(
   if (client) {
     services::UserService userService(client);
     auto user = userService.deleteUser(userId);
+    cache::RedisCache::erasePrefix("users:");
 
     if (user) {
       auto resp = HttpResponse::newHttpResponse();

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "models/Roles.h"
+#include "pagination/PageRequest.h"
 
 #include <drogon/orm/DbClient.h>
 #include <json/json.h>
@@ -14,8 +15,8 @@ namespace services {
 class RoleService {
  public:
   explicit RoleService(drogon::orm::DbClientPtr client);
-  std::vector<drogon_model::drogon_user_service::Roles> listRoles(
-      int page, int pageSize) const;
+  pagination::PageResult<drogon_model::drogon_user_service::Roles> listRoles(
+      const pagination::PageRequest& request) const;
   std::optional<drogon_model::drogon_user_service::Roles> findById(
       const std::string& id) const;
   drogon_model::drogon_user_service::Roles createRole(

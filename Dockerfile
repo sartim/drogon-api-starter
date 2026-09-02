@@ -5,14 +5,14 @@ WORKDIR /src
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      cmake pkg-config curl libjsoncpp-dev uuid-dev libpqxx-dev \
+      cmake pkg-config curl libjsoncpp-dev uuid-dev libpqxx-dev libhiredis-dev \
       libssl-dev zlib1g-dev libbz2-dev liblzma-dev libpq-dev && \
     rm -rf /var/lib/apt/lists/*
 
 RUN git clone --depth 1 --recurse-submodules https://github.com/drogonframework/drogon.git /tmp/drogon && \
     cmake -S /tmp/drogon -B /tmp/drogon/build \
       -DCMAKE_BUILD_TYPE=Release \
-      -DBUILD_POSTGRESQL=ON -DBUILD_MYSQL=OFF -DBUILD_SQLITE=OFF \
+      -DBUILD_POSTGRESQL=ON -DBUILD_REDIS=ON -DBUILD_MYSQL=OFF -DBUILD_SQLITE=OFF \
       -DBUILD_EXAMPLES=OFF -DBUILD_CTL=OFF && \
     cmake --build /tmp/drogon/build --parallel && \
     cmake --install /tmp/drogon/build
@@ -38,7 +38,7 @@ WORKDIR /app
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
       ca-certificates curl libbrotli1 libc-ares2 libgcc-s1 libjsoncpp25 \
-      libpq5 libpqxx-6.4 libssl3 libstdc++6 libuuid1 zlib1g && \
+      libpq5 libpqxx-6.4 libhiredis0.14 libssl3 libstdc++6 libuuid1 zlib1g && \
     rm -rf /var/lib/apt/lists/* && \
     useradd --system --create-home --home-dir /app --shell /usr/sbin/nologin appuser
 

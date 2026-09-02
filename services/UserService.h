@@ -1,6 +1,7 @@
 #pragma once
 
 #include "models/Users.h"
+#include "pagination/PageRequest.h"
 
 #include <json/json.h>
 
@@ -14,8 +15,8 @@ class UserService {
  public:
   explicit UserService(drogon::orm::DbClientPtr client);
 
-  std::vector<drogon_model::drogon_user_service::Users> listUsers(
-      int page, int pageSize) const;
+  pagination::PageResult<drogon_model::drogon_user_service::Users> listUsers(
+      const pagination::PageRequest& request) const;
   std::optional<drogon_model::drogon_user_service::Users> findById(
       const std::string& id) const;
   drogon_model::drogon_user_service::Users createUser(
