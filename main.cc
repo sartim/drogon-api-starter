@@ -73,6 +73,15 @@ void registerRoutes() {
       },
       {Get});
 
+  drogon::app().registerHandler(
+      "/swagger.html",
+      [](const HttpRequestPtr &req,
+         function<void(const HttpResponsePtr &)> &&callback) {
+        callback(HttpResponse::newFileResponse(
+            "./docs/swagger.html", "", CT_TEXT_HTML, "", req));
+      },
+      {Get});
+
   // Register generate jwt token
   auto authController = make_shared<AuthController>();
   drogon::app().registerHandler(
