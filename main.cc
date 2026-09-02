@@ -64,6 +64,15 @@ void registerRoutes() {
       },
       {Get});
 
+  drogon::app().registerHandler(
+      "/openapi.yaml",
+      [](const HttpRequestPtr &req,
+         function<void(const HttpResponsePtr &)> &&callback) {
+        callback(HttpResponse::newFileResponse(
+            "./docs/openapi.yaml", "", CT_CUSTOM, "application/yaml", req));
+      },
+      {Get});
+
   // Register generate jwt token
   auto authController = make_shared<AuthController>();
   drogon::app().registerHandler(
