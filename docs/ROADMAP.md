@@ -31,6 +31,8 @@ is available when a developer wants only the platform foundation.
       readiness failure.
 - [x] **P0** Automate semantic releases with `vX.Y.Z` tags; `v0.2.0` is
       published.
+- [x] **P0** Add vendor-neutral error reporting interfaces with a safe no-op
+      provider and optional provider selection.
 
 ## P0 — Now: dependable starter workflow
 
@@ -38,9 +40,6 @@ is available when a developer wants only the platform foundation.
       configuration, migrations, seeding, Swagger, and health validation.
 - [ ] Pin Drogon and third-party dependency versions or commits and document
       the upgrade policy.
-- [ ] Introduce vendor-neutral error-reporting and APM interfaces with a safe
-      no-op provider; keep Sentry, OpenTelemetry, and other exporters optional
-      ([PR #39](https://github.com/sartim/drogon-api-starter/pull/39)).
 - [ ] Complete and merge the Dependabot configuration
       ([PR #15](https://github.com/sartim/drogon-api-starter/pull/15)).
 - [ ] Merge the macOS metadata protection
@@ -52,11 +51,6 @@ is available when a developer wants only the platform foundation.
       vendor SDKs to application or service code.
 - [ ] Propagate request ID, trace ID, route, status, version, and bounded
       contextual fields while keeping reporting asynchronous and fail-open.
-- [ ] Keep migrations as an explicit deployment job, never run them from every
-      application replica
-- [ ] Pin external dependency versions or commits and document upgrade policy
-- [ ] Complete Dependabot and semantic release configuration
-
 - [ ] Add Kubernetes Deployment, Service, ConfigMap, Secret example, resource
       requests/limits, probes, and optional Ingress.
 - [ ] Add a Kubernetes migration Job with documented rollout ordering.
