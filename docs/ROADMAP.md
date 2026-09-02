@@ -34,7 +34,7 @@ is available when a developer wants only the platform foundation.
 
 ## P0 — Now: dependable starter workflow
 
-- [ ] Make a fresh clone runnable with one documented command covering
+- [x] Make a fresh clone runnable with one documented command covering
       configuration, migrations, seeding, Swagger, and health validation.
 - [ ] Pin Drogon and third-party dependency versions or commits and document
       the upgrade policy.

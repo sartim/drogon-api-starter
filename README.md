@@ -95,10 +95,14 @@ unavailable, requests continue using PostgreSQL.
 To run a complete local stack with Redis:
 
 ```sh
-cp .env.example .env
-docker compose up --build
-curl --fail http://localhost:8000/health
+./scripts/compose-start.sh
 ```
+
+The bootstrap command creates `.env` when needed, starts PostgreSQL and Redis,
+runs migrations, loads reference seed data, starts the user-service profile,
+and validates both liveness and readiness. It builds locally by default. When
+`user_service:latest` is already available, use `COMPOSE_BUILD=false` to skip
+the build.
 
 For native development, use `./scripts/setup_local.sh` on macOS or
 `./scripts/setup_ubuntu24.sh` on Ubuntu 24.04, then run:
