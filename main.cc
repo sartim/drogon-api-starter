@@ -59,6 +59,21 @@ void registerRoutes() {
   drogon::app().registerHandler("/", healthHandler, {Get});
 
   drogon::app().registerHandler(
+      "/ready",
+      [](const HttpRequestPtr &,
+         function<void(const HttpResponsePtr &)> &&callback) {
+        Json::Value response;
+        const bool databaseReady = drogon::app().hasDbClient("default") &&
+                                    drogon::app().areAllDbClientsAvailable();
+        response["status"] = databaseReady ? "ready" : "not_ready";
+        response["database"] = databaseReady ? "up" : "down";
+        auto result = HttpResponse::newHttpJsonResponse(response);
+        result->setStatusCode(databaseReady ? k200OK : k503ServiceUnavailable);
+        callback(result);
+      },
+      {Get});
+
+  drogon::app().registerHandler(
       "/metrics",
       [](const HttpRequestPtr &,
          function<void(const HttpResponsePtr &)> &&callback) {

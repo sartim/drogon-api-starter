@@ -26,9 +26,17 @@ RUN git clone --depth 1 https://github.com/Thalhammer/jwt-cpp.git /tmp/jwt-cpp &
 COPY . .
 RUN git clone --depth 1 https://github.com/hilch/Bcrypt.cpp.git Bcrypt.cpp
 
-RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && \
+ARG ENABLE_USER_SERVICE=OFF
+RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+      -DENABLE_USER_SERVICE=${ENABLE_USER_SERVICE} && \
     cmake --build build --parallel && \
     ctest --test-dir build --output-on-failure
+
+# Always compile the complete batteries-included profile in CI so changes to
+# the optional service are validated even when the default image is minimal.
+RUN cmake --preset user-service && \
+    cmake --build --preset user-service --parallel && \
+    ctest --preset user-service
 
 FROM debian:bookworm-slim AS runtime
 
