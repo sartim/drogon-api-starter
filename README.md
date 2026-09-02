@@ -11,6 +11,49 @@ The REST API is the default. Optional gRPC adapters will share the same
 application services and can be enabled by developers who need internal,
 strongly typed service communication; gRPC will not be a baseline dependency.
 
+## Supported starter profiles
+
+The repository provides batteries-included profiles without forcing every
+developer to adopt every feature:
+
+- `minimal`: Drogon platform foundation, configuration, health, metrics,
+  documentation, and platform tests
+- `user-service`: the minimal profile plus JWT authentication, users, roles,
+  RBAC, database models, migrations, and service tests
+
+Start with the minimal profile:
+
+    $ cmake --preset minimal
+    $ cmake --build --preset minimal
+    $ ctest --preset minimal
+
+Or use the complete user-service profile:
+
+    $ cmake --preset user-service
+    $ cmake --build --preset user-service
+    $ ctest --preset user-service
+
+Redis and gRPC are separate optional capabilities and will be added to these
+profiles without becoming mandatory dependencies of the minimal build.
+
+This repository follows a batteries-included profile model. The default
+`minimal` profile provides the Drogon platform foundation; the optional
+`user-service` profile adds JWT authentication, users, roles, RBAC, and their
+tests as a complete supported starting point. Developers can begin with the
+minimal profile or select the user-service batteries when they need them.
+
+```sh
+# Minimal Drogon API
+cmake --preset minimal
+cmake --build --preset minimal
+ctest --preset minimal
+
+# Drogon API with the user-service batteries
+cmake --preset user-service
+cmake --build --preset user-service
+ctest --preset user-service
+```
+
 ## Requirements
 
 * [Drogon](https://github.com/drogonframework/drogon)

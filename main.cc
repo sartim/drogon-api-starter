@@ -1,6 +1,8 @@
+#ifdef ENABLE_USER_SERVICE
 #include "controllers/AuthController.h"
 #include "controllers/RoleController.h"
 #include "controllers/UserController.h"
+#endif
 #include "config/AppConfig.h"
 #include "cache/RedisCache.h"
 #include "models/Users.h"
@@ -95,6 +97,9 @@ void registerRoutes() {
       },
       {Get});
 
+  // The user/RBAC API is an opt-in service profile. The platform itself only
+  // exposes health, documentation, metrics, and the configured listener.
+#ifdef ENABLE_USER_SERVICE
   // Register generate jwt token
   auto authController = make_shared<AuthController>();
   drogon::app().registerHandler(
@@ -177,6 +182,7 @@ void registerRoutes() {
         }
       },
       {Options, Get, Put, Delete, "AuthFilter"});
+#endif
 }
 
 void dropTables() {}

@@ -7,6 +7,10 @@ endif ()
 
 project(drogon_user_service VERSION ${SERVICE_VERSION} LANGUAGES CXX)
 
+option(ENABLE_USER_SERVICE
+       "Build the user/RBAC service profile"
+       OFF)
+
 include(CTest)
 enable_testing()
 
@@ -72,8 +76,11 @@ aux_source_directory(schemas SCHEMA_SRC)
 aux_source_directory(observability OBSERVABILITY_SRC)
 aux_source_directory(config CONFIG_SRC)
 aux_source_directory(services SERVICES_SRC)
-aux_source_directory(pagination PAGINATION_SRC)
-aux_source_directory(cache CACHE_SRC)
+if (NOT ENABLE_USER_SERVICE)
+    list(FILTER CTL_SRC EXCLUDE REGEX ".*/(AuthController|RoleController|UserController)\\.cc$")
+    list(FILTER FILTER_SRC EXCLUDE REGEX ".*/AuthFilter\\.cc$")
+    list(FILTER SERVICES_SRC EXCLUDE REGEX ".*/(RoleService|UserService)\\.cc$")
+endif ()
 drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
                     ${CMAKE_CURRENT_BINARY_DIR})
 # use the following line to create views with namespaces.
@@ -100,16 +107,20 @@ target_sources(${PROJECT_NAME}
                ${OBSERVABILITY_SRC}
                ${CONFIG_SRC}
                ${SERVICES_SRC})
-target_sources(${PROJECT_NAME} PRIVATE ${PAGINATION_SRC} ${CACHE_SRC})
+if (ENABLE_USER_SERVICE)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_USER_SERVICE=1)
+endif ()
 # ##############################################################################
 # uncomment the following line for dynamically loading views 
 # set_property(TARGET ${PROJECT_NAME} PROPERTY ENABLE_EXPORTS ON)
 
 # ##############################################################################
 
-add_library(bcrypt Bcrypt.cpp/src/bcrypt.cpp Bcrypt.cpp/src/blowfish.cpp)
-target_include_directories(bcrypt PRIVATE Bcrypt.cpp/src/)
-target_include_directories(bcrypt PUBLIC Bcrypt.cpp/include/)
+if (ENABLE_USER_SERVICE)
+    add_library(bcrypt Bcrypt.cpp/src/bcrypt.cpp Bcrypt.cpp/src/blowfish.cpp)
+    target_include_directories(bcrypt PRIVATE Bcrypt.cpp/src/)
+    target_include_directories(bcrypt PUBLIC Bcrypt.cpp/include/)
+endif ()
 
 add_subdirectory(test)
 
@@ -117,19 +128,19 @@ find_package(OpenSSL REQUIRED)
 target_include_directories(${PROJECT_NAME} PRIVATE ${OPENSSL_INCLUDE_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${OPENSSL_LIBRARIES})
 
-if (EXISTS "${CMAKE_SOURCE_DIR}/.local/cmake/jwt-cpp-config.cmake")
-    find_package(jwt-cpp CONFIG REQUIRED
-                 PATHS "${CMAKE_SOURCE_DIR}/.local/cmake" NO_DEFAULT_PATH)
-else ()
-    find_package(jwt-cpp CONFIG REQUIRED)
+if (ENABLE_USER_SERVICE)
+    if (EXISTS "${CMAKE_SOURCE_DIR}/.local/cmake/jwt-cpp-config.cmake")
+        find_package(jwt-cpp CONFIG REQUIRED
+                     PATHS "${CMAKE_SOURCE_DIR}/.local/cmake" NO_DEFAULT_PATH)
+    else ()
+        find_package(jwt-cpp CONFIG REQUIRED)
+    endif ()
+    target_link_libraries(${PROJECT_NAME} PRIVATE jwt-cpp::jwt-cpp bcrypt)
 endif ()
-target_link_libraries(${PROJECT_NAME} PRIVATE jwt-cpp::jwt-cpp)
 
 #find_package(AWSSDK CONFIG COMPONENTS core dynamodb kinesis s3 REQUIRED)
 #target_include_directories(${PROJECT_NAME} PRIVATE ${AWSSDK_INCLUDE_DIRS})
 #target_link_libraries(${PROJECT_NAME} PRIVATE ${AWSSDK_LIBRARIES})
-
-target_link_libraries(${PROJECT_NAME} PRIVATE bcrypt)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(PQXX REQUIRED IMPORTED_TARGET libpqxx)
