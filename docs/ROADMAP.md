@@ -51,10 +51,6 @@ is available when a developer wants only the platform foundation.
       contextual fields while keeping reporting asynchronous and fail-open.
 - [x] Keep migrations as an explicit deployment job, never run them from every
       application replica.
-- [ ] Add Kubernetes Deployment, Service, ConfigMap, Secret example, resource
-      requests/limits, probes, and optional Ingress.
-- [ ] Add a Kubernetes migration Job with documented rollout ordering.
-- [ ] Add Prometheus scrape annotations and production logging/tracing guidance.
 - [ ] Add graceful shutdown, connection-pool tuning, timeouts, and rate limits.
 - [ ] Add an operational runbook for backups, rollbacks, migrations, and
       incident response.
@@ -90,4 +86,6 @@ is available when a developer wants only the platform foundation.
   ORM boundary is a deliberate follow-up before extreme-load production use.
 - Optional integrations must fail open where safe and never make the baseline
   service require credentials or infrastructure it does not use.
+- Deployment packaging is intentionally optional; teams may add Helm,
+  Kustomize, or platform-specific manifests in their consuming repository.
 - Every milestone should be independently reviewable through a pull request.

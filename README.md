@@ -335,49 +335,6 @@ reproducible builds. Upgrade them deliberately in `Dockerfile`, run the CI
 matrix, and review the resulting dependency changes. Dependabot continues to
 update base images, Docker dependencies, and GitHub Actions where supported.
 
-## Kubernetes deployment
-
-The starter includes a provider-neutral Kubernetes base in
-`deploy/kubernetes/`. It deploys two API replicas with `/health` liveness,
-`/ready` readiness, Prometheus scrape annotations, conservative resources, and
-non-root container settings. PostgreSQL and Redis are treated as injectable
-dependencies; point `DB_HOST` and `REDIS_HOST` at your managed services or
-cluster-local services.
-
-Create a real Secret from the example without committing credentials, then run
-the migration Job before rolling out the API. The migration ConfigMap is
-generated from the repository migrations directory so new migration files are
-included without duplicating SQL in Kubernetes manifests:
-
-```bash
-kubectl create configmap drogon-api-starter-migrations \\
-  --from-file=db/migrations \\
-  --dry-run=client -o yaml | kubectl apply -f -
-kubectl create secret generic drogon-api-starter-secrets \\
-  --from-literal=SECRET_KEY="$(openssl rand -hex 32)" \\
-  --from-literal=DB_PASSWORD="$DB_PASSWORD" \\
-  --from-literal=REDIS_PASSWORD="${REDIS_PASSWORD:-}" \\
-  --from-literal=SENTRY_DSN="${SENTRY_DSN:-}" \\
-  --dry-run=client -o yaml | kubectl apply -f -
-kubectl apply -k deploy/kubernetes
-kubectl wait --for=condition=complete job/drogon-api-starter-migrations --timeout=120s
-kubectl rollout status deployment/drogon-api-starter --timeout=120s
-```
-
-The migration Job is deliberately explicit and must be recreated for a later
-deployment when its name already exists:
-
-```bash
-kubectl create configmap drogon-api-starter-migrations \\
-  --from-file=db/migrations \\
-  --dry-run=client -o yaml | kubectl apply -f -
-kubectl delete job drogon-api-starter-migrations --ignore-not-found
-kubectl apply -k deploy/kubernetes
-```
-
-For a private image registry, override the image through a kustomization
-overlay rather than editing the base manifests.
-
 ## CI integration smoke test
 
 GitHub Actions runs the user-service image with PostgreSQL and Redis using the
