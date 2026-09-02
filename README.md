@@ -101,6 +101,13 @@ when Drogon was built with hiredis and Redis is reachable. List responses are
 cached for 30 seconds; writes invalidate the resource cache. If Redis is
 unavailable, requests continue using PostgreSQL.
 
+Connection-pool and timeout settings are configurable through `.env`:
+`DB_CONNECTION_POOL_SIZE`, `DB_QUERY_TIMEOUT_SECONDS`,
+`REDIS_CONNECTION_POOL_SIZE`, `REDIS_COMMAND_TIMEOUT_SECONDS`, and
+`HTTP_IDLE_CONNECTION_TIMEOUT_SECONDS`. The defaults are conservative for
+local development; production values should be sized against database limits,
+worker count, and expected concurrency.
+
 To run a complete local stack with Redis:
 
 ```sh

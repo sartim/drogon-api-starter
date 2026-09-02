@@ -241,6 +241,8 @@ void runServer(const config::AppConfig &appConfig) {
   drogon::app().setLogLevel(trantor::Logger::kTrace);
   const auto port = appConfig.httpPort;
   // Set HTTP listener address and port
+  drogon::app().setIdleConnectionTimeout(
+      static_cast<size_t>(appConfig.idleConnectionTimeoutSeconds));
   drogon::app().addListener(appConfig.httpHost, port);
 
   // Load Drogon configuration directly from the values loaded from .env.
