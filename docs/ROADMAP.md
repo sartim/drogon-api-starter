@@ -51,10 +51,10 @@ is available when a developer wants only the platform foundation.
       contextual fields while keeping reporting asynchronous and fail-open.
 - [x] Keep migrations as an explicit deployment job, never run them from every
       application replica.
-- [ ] Add Kubernetes Deployment, Service, ConfigMap, Secret example, resource
+- [x] Add Kubernetes Deployment, Service, ConfigMap, Secret example, resource
       requests/limits, probes, and optional Ingress.
-- [ ] Add a Kubernetes migration Job with documented rollout ordering.
-- [ ] Add Prometheus scrape annotations and production logging/tracing guidance.
+- [x] Add a Kubernetes migration Job with documented rollout ordering.
+- [x] Add Prometheus scrape annotations and production logging/tracing guidance.
 - [ ] Add graceful shutdown, connection-pool tuning, timeouts, and rate limits.
 - [ ] Add an operational runbook for backups, rollbacks, migrations, and
       incident response.

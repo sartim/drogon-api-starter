@@ -338,7 +338,7 @@ update base images, Docker dependencies, and GitHub Actions where supported.
 ## Kubernetes deployment
 
 The starter includes a provider-neutral Kubernetes base in
-`deploy/kubernetes/`. It deploys two API replicas with `/health` liveness,
+`deploy/kubernetes/base/`. It deploys two API replicas with `/health` liveness,
 `/ready` readiness, Prometheus scrape annotations, conservative resources, and
 non-root container settings. PostgreSQL and Redis are treated as injectable
 dependencies; point `DB_HOST` and `REDIS_HOST` at your managed services or
@@ -359,7 +359,7 @@ kubectl create secret generic drogon-api-starter-secrets \\
   --from-literal=REDIS_PASSWORD="${REDIS_PASSWORD:-}" \\
   --from-literal=SENTRY_DSN="${SENTRY_DSN:-}" \\
   --dry-run=client -o yaml | kubectl apply -f -
-kubectl apply -k deploy/kubernetes
+kubectl apply -k deploy/kubernetes/base
 kubectl wait --for=condition=complete job/drogon-api-starter-migrations --timeout=120s
 kubectl rollout status deployment/drogon-api-starter --timeout=120s
 ```
@@ -372,11 +372,23 @@ kubectl create configmap drogon-api-starter-migrations \\
   --from-file=db/migrations \\
   --dry-run=client -o yaml | kubectl apply -f -
 kubectl delete job drogon-api-starter-migrations --ignore-not-found
-kubectl apply -k deploy/kubernetes
+kubectl apply -k deploy/kubernetes/base
 ```
 
 For a private image registry, override the image through a kustomization
 overlay rather than editing the base manifests.
+
+The production overlay demonstrates managed PostgreSQL and Redis endpoints,
+three replicas, rolling updates, and an NGINX Ingress with TLS. Replace the
+example hostnames and image tag in
+`deploy/kubernetes/overlays/production/` before applying it:
+
+```bash
+kubectl apply -k deploy/kubernetes/overlays/production
+```
+
+The production overlay assumes the `drogon-api-starter-secrets` Secret and the
+`drogon-api-starter-migrations` ConfigMap were created as described above.
 
 ## CI integration smoke test
 

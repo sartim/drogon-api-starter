@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: drogon-api-starter-config
+data:
+  DB_HOST: postgres-rw.database.svc.cluster.local
+  DB_NAME: drogon_user_service
+  DB_USER: postgres
+  REDIS_ENABLED: "true"
+  REDIS_HOST: redis-master.cache.svc.cluster.local
