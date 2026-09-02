@@ -1,0 +1,7 @@
+title: Drogon API platform starter
+description: A production-oriented Drogon API starter for C++ services.
+theme: jekyll-theme-primer
+markdown: kramdown
+include:
+  - openapi.yaml
+  - swagger.html
