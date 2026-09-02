@@ -14,8 +14,10 @@ AuthSchema::validate(const Json::Value &jsonBody) const {
     const std::string &fieldName = field.first;
     bool required = field.second;
 
-     if (required && !jsonBody.isMember(fieldName)) {
-         errors.push_back("Field '" + fieldName + "' is required.");
+     if (required && (!jsonBody.isMember(fieldName) ||
+                      !jsonBody[fieldName].isString() ||
+                      jsonBody[fieldName].asString().empty())) {
+         errors.push_back("Field '" + fieldName + "' must be a non-empty string.");
      }
   }
 

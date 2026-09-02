@@ -37,6 +37,17 @@ To run tests after the initial setup:
 
     $ ctest --test-dir build --output-on-failure
 
+To rebuild and run the complete local unit-test suite from a clean checkout:
+
+    $ ./scripts/setup_local.sh
+
+To run only the test binary with verbose DrogonTest output:
+
+    $ ./build/test/drogon_user_service_test
+
+The unit tests do not require PostgreSQL or a running API server. The server
+is started separately with `./build/drogon_user_service --action=run-server`.
+
 The liveness endpoint is implemented by the application at
 `GET /health` and returns `{"status":"up"}` without requiring a database
 connection. The Docker healthcheck calls this endpoint.
@@ -46,6 +57,16 @@ libpqxx, JsonCpp, CMake, and a C++17 compiler using your distribution's
 package manager. Then clone Bcrypt.cpp into the project root and use the same
 `cmake`, `cmake --build`, and `ctest` commands. Docker remains available for a
 fully isolated Linux build.
+
+For Ubuntu 24.04, the repository provides an automated native setup:
+
+    $ ./scripts/setup_ubuntu24.sh
+
+It installs the required apt packages, builds Drogon with PostgreSQL support,
+builds jwt-cpp and Bcrypt.cpp from their repositories, then runs the local
+unit tests. It does not start the server; start it with:
+
+    $ ./build/drogon_user_service --action=run-server
 
 ## Create .env file
 
