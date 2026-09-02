@@ -206,3 +206,8 @@ On the project root:
 ## Running with docker
     
     $ docker compose up --build
+
+The Dockerfile uses a multi-stage build. The builder contains compilers and
+development dependencies; the final runtime image contains only the service,
+runtime libraries, and API documentation. Configuration is supplied at
+container startup, so database credentials are not stored in image layers.
