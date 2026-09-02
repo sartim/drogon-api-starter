@@ -24,7 +24,14 @@ jobs:
         run: docker run --rm user-service:ci-builder ctest --test-dir build --output-on-failure
 
       - name: Start service
-        run: docker run --detach --name user-service-ci --publish 8000:8000 user-service:ci
+        run: |
+          docker run --detach --name user-service-ci --publish 8000:8000 \
+            --env SECRET_KEY=ci-test-secret \
+            --env DB_HOST=127.0.0.1 \
+            --env DB_NAME=ci-test \
+            --env DB_USER=ci-test \
+            --env DB_PASSWORD= \
+            user-service:ci
 
       - name: Wait for health endpoint
         run: |

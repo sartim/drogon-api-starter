@@ -1,6 +1,7 @@
 #include "controllers/AuthController.h"
 #include "controllers/RoleController.h"
 #include "controllers/UserController.h"
+#include "config/AppConfig.h"
 #include "models/Users.h"
 #include "observability/Observability.h"
 #include "tables/PermissionTable.h"
@@ -9,38 +10,14 @@
 #include "tables/UserPermissionTable.h"
 #include "tables/UserTable.h"
 #include <drogon/HttpAppFramework.h>
-#include <fstream>
 #include <filesystem>
 #include <iostream>
-#include <map>
-#include <sstream>
 #include <stdexcept>
 
 using namespace std;
 using namespace drogon;
 using namespace drogon::orm;
 using namespace drogon_model::drogon_user_service;
-
-namespace {
-std::filesystem::path findEnvFile() {
-  const auto currentDirectory = std::filesystem::current_path();
-  const std::filesystem::path candidates[] = {
-      currentDirectory / ".env",
-      currentDirectory.parent_path() / ".env",
-  };
-
-  for (const auto &candidate : candidates) {
-    if (std::filesystem::is_regular_file(candidate)) {
-      return candidate;
-    }
-  }
-
-  throw runtime_error("Failed to find .env in " +
-                      (currentDirectory / ".env").string() + " or " +
-                      (currentDirectory.parent_path() / ".env").string());
-}
-} // namespace
-
 
 void createTables(const string &connectionString) {
   // User table
@@ -203,8 +180,8 @@ void registerRoutes() {
 
 void dropTables() {}
 
-void runServer(const Json::Value &config, const string &sentryDsn) {
-  observability::configure(sentryDsn);
+void runServer(const config::AppConfig &appConfig) {
+  observability::configure(appConfig.sentryDsn);
 
   app().registerPreRoutingAdvice([](const HttpRequestPtr &request) {
     const auto id = observability::requestId(request);
@@ -230,13 +207,13 @@ void runServer(const Json::Value &config, const string &sentryDsn) {
 
   // Set log level
   drogon::app().setLogLevel(trantor::Logger::kTrace);
-  int32_t port = 8000;
+  const auto port = appConfig.httpPort;
   // Set HTTP listener address and port
-  drogon::app().addListener("0.0.0.0", port);
+  drogon::app().addListener(appConfig.httpHost, port);
 
   // Load Drogon configuration directly from the values loaded from .env.
   try {
-    drogon::app().loadConfigJson(config);
+    drogon::app().loadConfigJson(appConfig.toDrogonJson());
     drogon::app().setDocumentRoot("./docs");
   } catch (const exception &e) {
     cerr << "Exception caught: " << typeid(e).name() << " - " << e.what()
@@ -251,73 +228,15 @@ void runServer(const Json::Value &config, const string &sentryDsn) {
   drogon::app().run();
 }
 
-map<string, string> loadEnvVariables(const string &filename) {
-  map<string, string> envVariables;
-
-  ifstream file(filename);
-  if (!file.is_open()) {
-    throw runtime_error("Failed to open .env file.");
-  }
-
-  string line;
-  while (getline(file, line)) {
-    stringstream lineStream(line);
-    string key, value;
-    if (getline(lineStream, key, '=') && getline(lineStream, value)) {
-      envVariables[key] = value;
-    }
-  }
-
-  file.close();
-
-  return envVariables;
-}
-
-Json::Value generateConfig() {
-  // Load environment variables from .env file
-  map<string, string> envVariables = loadEnvVariables(".env");
-
-  // Create a JSON object
-  Json::Value config;
-  // Set the values for the variables from environment variables
-  string secretKey = envVariables["SECRET_KEY"];
-  string dbHost = envVariables["DB_HOST"];
-  string dbName = envVariables["DB_NAME"];
-  string user = envVariables["DB_USER"];
-  string password = envVariables["DB_PASSWORD"];
-
-  config["secret_key"] = secretKey;
-  config["db_clients"] = Json::Value(Json::arrayValue);
-  Json::Value &dbClients = config["db_clients"];
-
-  // Create a database client object
-  Json::Value dbClient;
-  dbClient["name"] = "default";
-  dbClient["rdbms"] = "postgresql";
-  dbClient["host"] = dbHost;
-  dbClient["port"] = 5432;
-  dbClient["dbname"] = dbName;
-  dbClient["user"] = user;
-  dbClient["passwd"] = password;
-  dbClient["is_fast"] = false;
-  dbClient["connection_number"] = 1;
-  dbClient["filename"] = "";
-
-  // Add the database client object to the array
-  dbClients.append(dbClient);
-
-  return config;
-}
-
 int main(int argc, char *argv[]) {
-  Json::Value config;
+  config::AppConfig appConfig;
   try {
     // CLion commonly launches the binary from build/, while the development
     // configuration lives in the project root. Use the .env directory as the
     // process working directory so docs resolve consistently.
-    const auto envFile = findEnvFile();
+    const auto envFile = config::findEnvFile();
     std::filesystem::current_path(envFile.parent_path());
-    config = generateConfig();
+    appConfig = config::AppConfig::load(envFile);
   } catch (const exception &e) {
     cerr << "Unable to initialize configuration: " << e.what() << endl;
     return 1;
@@ -345,20 +264,12 @@ int main(int argc, char *argv[]) {
   string value = action.substr(equalsPos + 1);
 
   // Database config to database cli interface
-  map<string, string> envVariables = loadEnvVariables(".env");
-  string dbHost = envVariables["DB_HOST"];
-  string dbName = envVariables["DB_NAME"];
-  string user = envVariables["DB_USER"];
-  string password = envVariables["DB_PASSWORD"];
-  string port = "5432";
-  string connectionString = "postgresql://"+ user +":"+ password +"@"+ dbHost +":"+ port +"/"+ dbName;
-
   // Check the action and perform the corresponding operation
   if (key == "--action") {
     if (value == "run-server") {
-      runServer(config, envVariables["SENTRY_DSN"]);
+      runServer(appConfig);
     } else if (value == "create-tables") {
-      createTables(connectionString);
+      createTables(appConfig.databaseConnectionString());
     } else if (value == "drop-tables") {
       dropTables();
     } else {
