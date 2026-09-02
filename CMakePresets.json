@@ -1,0 +1,43 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "minimal",
+      "displayName": "Minimal Drogon platform",
+      "binaryDir": "${sourceDir}/build/minimal",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "ENABLE_USER_SERVICE": "OFF"
+      }
+    },
+    {
+      "name": "user-service",
+      "displayName": "User/RBAC service profile",
+      "inherits": "minimal",
+      "binaryDir": "${sourceDir}/build/user-service",
+      "cacheVariables": {
+        "ENABLE_USER_SERVICE": "ON"
+      }
+    },
+    {
+      "name": "ci",
+      "displayName": "CI platform build",
+      "inherits": "minimal",
+      "binaryDir": "${sourceDir}/build/ci",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "minimal", "configurePreset": "minimal" },
+    { "name": "user-service", "configurePreset": "user-service" },
+    { "name": "ci", "configurePreset": "ci" }
+  ],
+  "testPresets": [
+    { "name": "minimal", "configurePreset": "minimal", "output": { "outputOnFailure": true } },
+    { "name": "user-service", "configurePreset": "user-service", "output": { "outputOnFailure": true } },
+    { "name": "ci", "configurePreset": "ci", "output": { "outputOnFailure": true } }
+  ]
+}
