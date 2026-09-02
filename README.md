@@ -18,10 +18,16 @@ repository directly. The destination must be new or empty:
 
     $ ./scripts/drogon-starter init payments-api ../payments-api
 
-This currently generates the minimal Drogon profile with CMake presets,
-configuration, a health endpoint, a smoke test, and a starter README. The
-user/RBAC service profile will be selectable as a supported batteries bundle
-after the profile work lands.
+By default this generates the maintained user-service profile with JWT
+authentication, users, roles, RBAC, migrations, tests, and the platform
+foundation already present in this repository:
+
+    $ ./scripts/drogon-starter init users-api ../users-api
+
+For a clean Drogon foundation without the user-service batteries, select the
+minimal profile:
+
+    $ ./scripts/drogon-starter init payments-api ../payments-api --profile minimal
 
 ## Supported starter profiles
 
