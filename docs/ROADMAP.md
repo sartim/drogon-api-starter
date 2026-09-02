@@ -4,6 +4,23 @@ The goal is to make this repository a maintained production template for
 serious Drogon services. The current user/RBAC API remains a working example
 module; platform capabilities should be reusable by new services.
 
+## Build profiles
+
+The default profile must be a minimal Drogon API that does not require the
+example user service, Redis, or gRPC. Developers opt into capabilities as they
+need them:
+
+```text
+minimal       platform foundation only
+user-example  minimal + authentication + users/RBAC + migrations
+redis         optional cache integration
+grpc          optional gRPC adapter
+```
+
+The profiles should be available through `CMakePresets.json` and equivalent
+documented CMake options. This keeps the first-run experience small while
+preserving the example code as a complete reference implementation.
+
 ## Milestone 1: runnable platform baseline
 
 - [x] Drogon, PostgreSQL, JWT authentication, migrations, seeding, OpenAPI,
@@ -14,6 +31,9 @@ module; platform capabilities should be reusable by new services.
 - [ ] Add `/ready` for PostgreSQL readiness and optional Redis readiness
 - [ ] Provide one-command startup, migration, seeding, Swagger, and health
       validation from a fresh clone
+- [ ] Make the minimal profile the default and move user/RBAC code behind an
+      opt-in example profile
+- [ ] Add `CMakePresets.json` for minimal, user-example, Redis, and CI builds
 
 ## Milestone 2: reliable delivery and integration testing
 
@@ -50,6 +70,8 @@ module; platform capabilities should be reusable by new services.
 
 - [ ] Define a stable template layout for `app`, `platform`, `examples`,
       `migrations`, `tests`, `deploy`, and `docs`
+- [ ] Keep example-specific migrations, configuration, and tests isolated from
+      the platform foundation
 - [ ] Add a generator wrapper around `drogon_ctl` for project, controller,
       filter, model, and view scaffolding
 - [ ] Provide a minimal generated example separate from the user/RBAC example
