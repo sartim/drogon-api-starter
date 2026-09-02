@@ -42,6 +42,13 @@ void RoleController::getRoles(
         page_size = stoi(page_size_it->second);
       }
 
+      if (page < 1 || page_size < 1 || page_size > 100) {
+        Json::Value error;
+        error["error"] = "page must be positive and page_size must be between 1 and 100";
+        callback(handleResponse(error, k400BadRequest));
+        return;
+      }
+
       // Calculate offset and limit
       int offset = (page - 1) * page_size;
       int limit = page_size;
@@ -94,6 +101,13 @@ void RoleController::getRoleById(
   if (client) {
     Mapper<Roles> mp(client);
     auto role = mp.findByPrimaryKey(id);
+
+    if (!role.getId()) {
+      Json::Value error;
+      error["error"] = "Record not found";
+      callback(handleResponse(error, k404NotFound));
+      return;
+    }
 
     Json::Value RolesJson(Json::arrayValue);
     Json::Value roleJson;
@@ -156,15 +170,11 @@ void RoleController::createRole(
     } catch (const exception &e) {
       cerr << "Exception caught: " << typeid(e).name() << " - " << e.what()
            << endl;
+      Json::Value error;
+      error["error"] = "Unable to create role";
+      callback(handleResponse(error, k500InternalServerError));
+      return;
     }
-
-    Json::Value response;
-    response["role"] = "result";
-    auto resp = HttpResponse::newHttpJsonResponse(response);
-    resp->setStatusCode(k200OK);
-    resp->setContentTypeCode(CT_APPLICATION_JSON);
-    resp->addHeader("Access-Control-Allow-Origin", "*");
-    callback(resp);
   } else {
     Json::Value error;
     error["error"] = "Unable to connect to database";
@@ -187,6 +197,13 @@ void RoleController::updateRoleById(
     Mapper<Roles> mp(client);
 
     auto jsonBody = req->getJsonObject();
+    if (!jsonBody || !(*jsonBody)["name"].isString() ||
+        !(*jsonBody)["description"].isString()) {
+      Json::Value error;
+      error["error"] = "Request body must contain name and description";
+      callback(handleResponse(error, k400BadRequest));
+      return;
+    }
     string name = jsonBody->get("name", "").asString();
     string description = jsonBody->get("description", "").asString();
 
@@ -196,10 +213,16 @@ void RoleController::updateRoleById(
     role.setName(name);
     role.setDescription(description);
 
-    // Update the role in the database
-    auto result = mp.update(role);
-    shared_ptr<HttpResponse> response = handleResponse(role.toJson(), k200OK);
-    callback(response);
+    try {
+      mp.update(role);
+      shared_ptr<HttpResponse> response = handleResponse(role.toJson(), k200OK);
+      callback(response);
+    } catch (const exception &e) {
+      LOG_ERROR << "Failed to update role: " << e.what();
+      Json::Value error;
+      error["error"] = "Unable to update role";
+      callback(handleResponse(error, k500InternalServerError));
+    }
   } else {
     Json::Value error;
     error["error"] = "Unable to connect to database";

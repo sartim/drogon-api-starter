@@ -18,7 +18,7 @@ public:
   METHOD_ADD(RoleController::getRoles, "/api/v1/role", Get, "AuthFilter");
   METHOD_ADD(RoleController::getRoleById, "/api/v1/role/{id}", Get,
              "AuthFilter");
-  METHOD_ADD(RoleController::createRole, "/api/v1/user", Post, "AuthFilter");
+  METHOD_ADD(RoleController::createRole, "/api/v1/role", Post, "AuthFilter");
   METHOD_ADD(RoleController::updateRoleById, "/api/v1/role/{id}", Put,
              "AuthFilter");
   METHOD_ADD(RoleController::deleteRoleById, "/api/v1/role/{id}", Delete,
