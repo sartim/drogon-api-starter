@@ -29,6 +29,8 @@ struct AppConfig {
   std::string redisPassword;
   int redisDb{0};
   int idleConnectionTimeoutSeconds{60};
+  int rateLimitRequests{0};
+  int rateLimitWindowSeconds{60};
 
   static AppConfig fromValues(const std::map<std::string, std::string>& values);
   static AppConfig load(const std::filesystem::path& envFile);
