@@ -76,6 +76,8 @@ aux_source_directory(schemas SCHEMA_SRC)
 aux_source_directory(observability OBSERVABILITY_SRC)
 aux_source_directory(config CONFIG_SRC)
 aux_source_directory(services SERVICES_SRC)
+aux_source_directory(pagination PAGINATION_SRC)
+aux_source_directory(cache CACHE_SRC)
 if (NOT ENABLE_USER_SERVICE)
     list(FILTER CTL_SRC EXCLUDE REGEX ".*/(AuthController|RoleController|UserController)\\.cc$")
     list(FILTER FILTER_SRC EXCLUDE REGEX ".*/AuthFilter\\.cc$")
@@ -106,7 +108,9 @@ target_sources(${PROJECT_NAME}
                ${SCHEMA_SRC}
                ${OBSERVABILITY_SRC}
                ${CONFIG_SRC}
-               ${SERVICES_SRC})
+               ${SERVICES_SRC}
+               ${PAGINATION_SRC}
+               ${CACHE_SRC})
 if (ENABLE_USER_SERVICE)
     target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_USER_SERVICE=1)
 endif ()
