@@ -94,3 +94,12 @@ On the project root:
 ## Running with docker
     
     $ docker compose up --build
+
+After the `main` branch is merged, GitHub Actions publishes an image to GitHub
+Container Registry. To pull that image without rebuilding locally:
+
+    $ docker pull ghcr.io/sartim/drogon_user_service:main
+    $ docker run --rm --publish 8000:8000 ghcr.io/sartim/drogon_user_service:main
+
+This is a container workflow. For a native macOS build and localhost process,
+use `./scripts/setup_local.sh` instead.
