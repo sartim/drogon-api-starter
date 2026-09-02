@@ -18,7 +18,7 @@ jobs:
         ports:
         - 5432:5432
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Run unit tests
       run: echo "Run unit tests"
   build:
@@ -37,7 +37,7 @@ jobs:
     strategy:
       max-parallel: 1
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Build Docker image
       run: |
         docker build \
