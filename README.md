@@ -11,6 +11,18 @@ The REST API is the default. Optional gRPC adapters will share the same
 application services and can be enabled by developers who need internal,
 strongly typed service communication; gRPC will not be a baseline dependency.
 
+## Generate a fresh service
+
+Use the generator when starting a new project instead of copying this
+repository directly. The destination must be new or empty:
+
+    $ ./scripts/drogon-starter init payments-api ../payments-api
+
+This currently generates the minimal Drogon profile with CMake presets,
+configuration, a health endpoint, a smoke test, and a starter README. The
+user/RBAC service profile will be selectable as a supported batteries bundle
+after the profile work lands.
+
 ## Supported starter profiles
 
 The repository provides batteries-included profiles without forcing every

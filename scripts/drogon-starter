@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  echo "Usage: $0 init <project-name> <empty-directory> [--profile minimal]" >&2
+  exit 2
+}
+
+[[ ${1:-} == "init" ]] || usage
+project_name=${2:-}
+destination=${3:-}
+profile=${5:-minimal}
+[[ -n "$project_name" && -n "$destination" ]] || usage
+[[ "$profile" == "minimal" ]] || {
+  echo "Only the minimal profile is currently available; user-service is planned." >&2
+  exit 2
+}
+
+case "$project_name" in
+  (*[!a-zA-Z0-9_-]*|'')
+    echo "Project name must contain only letters, numbers, '_' or '-'." >&2
+    exit 2
+    ;;
+esac
+
+if [[ -e "$destination" ]] && [[ -n "$(find "$destination" -mindepth 1 -maxdepth 1 -print -quit)" ]]; then
+  echo "Destination must be empty: $destination" >&2
+  exit 1
+fi
+mkdir -p "$destination"
+destination="$(cd "$destination" && pwd)"
+
+template_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/templates/$profile"
+cp -R "$template_dir/." "$destination/"
+find "$destination" -type f -not -path '*/.git/*' -exec sed -i.bak "s/@PROJECT_NAME@/$project_name/g" {} +
+find "$destination" -name '*.bak' -delete
+
+echo "Generated $profile Drogon service: $destination"
+echo "Next steps:"
+echo "  cd $destination"
+echo "  cmake --preset dev && cmake --build --preset dev && ctest --preset dev"
