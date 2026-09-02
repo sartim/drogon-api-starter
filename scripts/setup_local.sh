@@ -9,11 +9,21 @@ if ! command -v brew >/dev/null 2>&1; then
   exit 1
 fi
 
-brew install drogon jwt-cpp libpqxx openssl@3 postgresql@16
+brew install drogon libpqxx openssl@3 postgresql@16
 
 if [[ ! -d Bcrypt.cpp ]]; then
   git clone --depth 1 https://github.com/hilch/Bcrypt.cpp.git Bcrypt.cpp
 fi
+
+if [[ ! -d jwt-cpp ]]; then
+  git clone --depth 1 https://github.com/Thalhammer/jwt-cpp.git jwt-cpp
+fi
+
+jwt_install_dir="$project_dir/.local"
+cmake -S jwt-cpp -B jwt-cpp/build -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_INSTALL_PREFIX="$jwt_install_dir"
+cmake --build jwt-cpp/build --parallel
+cmake --install jwt-cpp/build
 
 if [[ ! -f .env ]]; then
   secret_key="$("$(brew --prefix openssl@3)/bin/openssl" rand -hex 32)"
@@ -33,8 +43,9 @@ brew services start postgresql@16 >/dev/null || true
 
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug \
   -DOPENSSL_ROOT_DIR="$(brew --prefix openssl@3)" \
-  -DCMAKE_PREFIX_PATH="$(brew --prefix drogon);$(brew --prefix jwt-cpp);$(brew --prefix libpqxx)"
+  -DCMAKE_PREFIX_PATH="$(brew --prefix drogon);$(brew --prefix libpqxx);$jwt_install_dir"
 cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 
 echo "Local build and unit tests completed successfully."
+echo "Server is not running. Start it with: ./build/drogon_user_service --action=run-server"
