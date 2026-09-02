@@ -15,18 +15,23 @@ User service running on Drogon Framework which handles RBAC management. Make sur
 
 ## Local development setup
 
-On macOS, the repository includes a bootstrap script for the supported local
-workflow. It installs the Homebrew dependencies, fetches Bcrypt.cpp, configures
-the project, builds the service and test binary, and runs the unit tests:
+On macOS, the repository includes a bootstrap script for a fresh clone. It
+installs the Homebrew dependencies, fetches Bcrypt.cpp, starts a local
+PostgreSQL service, creates a development database, creates `.env` only when it
+does not already exist, configures the project, builds the service and test
+binary, and runs the unit tests:
 
     $ ./scripts/setup_local.sh
 
-The script requires [Homebrew](https://brew.sh/) and does not create or modify
-database data. To run the service itself, copy `.env.example` to `.env`, fill
-in the values, start PostgreSQL, then run:
+The script requires [Homebrew](https://brew.sh/). It does not overwrite an
+existing `.env`. To run the service itself after setup:
 
     $ cmake --build build --parallel
     $ ./build/drogon_user_service --action=run-server
+
+To create the application tables in the local database:
+
+    $ ./build/drogon_user_service --action=create-tables
 
 To run tests after the initial setup:
 

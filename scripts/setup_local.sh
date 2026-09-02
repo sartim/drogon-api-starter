@@ -9,14 +9,31 @@ if ! command -v brew >/dev/null 2>&1; then
   exit 1
 fi
 
-brew install drogon jwt-cpp libpqxx openssl@3
+brew install drogon jwt-cpp libpqxx openssl@3 postgresql@16
 
 if [[ ! -d Bcrypt.cpp ]]; then
   git clone --depth 1 https://github.com/hilch/Bcrypt.cpp.git Bcrypt.cpp
 fi
 
+if [[ ! -f .env ]]; then
+  secret_key="$("$(brew --prefix openssl@3)/bin/openssl" rand -hex 32)"
+  cat > .env <<EOF
+SECRET_KEY=${secret_key}
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_NAME=drogon_user_service
+DB_USER=$(whoami)
+DB_PASSWORD=
+EOF
+  echo "Created local .env with a generated development secret."
+fi
+
+brew services start postgresql@16 >/dev/null || true
+"$(brew --prefix postgresql@16)/bin/createdb" drogon_user_service 2>/dev/null || true
+
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug \
-  -DOPENSSL_ROOT_DIR="$(brew --prefix openssl@3)"
+  -DOPENSSL_ROOT_DIR="$(brew --prefix openssl@3)" \
+  -DCMAKE_PREFIX_PATH="$(brew --prefix drogon);$(brew --prefix jwt-cpp);$(brew --prefix libpqxx)"
 cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 

@@ -151,7 +151,7 @@ void runServer() {
 
   // Load config file
   try {
-    drogon::app().loadConfigFile("../config.json");
+    drogon::app().loadConfigFile("config.json");
   } catch (const exception &e) {
     cerr << "Exception caught: " << typeid(e).name() << " - " << e.what()
          << endl;
