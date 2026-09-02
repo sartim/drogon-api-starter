@@ -216,6 +216,10 @@ baseline build; OpenTelemetry or vendor adapters can consume it later.
 
 Error tracking is provider-neutral and fail-open. The application depends on
 the `ErrorReporter` interface, while provider SDKs remain optional adapters.
+Optional integrations can register an adapter with
+`registerErrorReporterProvider(...)`; the core service falls back to the
+no-op reporter when an adapter is absent or fails to initialize. This keeps
+Sentry, OpenTelemetry/OTLP, and other APM SDKs outside application code.
 Set `ERROR_TRACKING_PROVIDER=none` for the no-op default. Sentry, OpenTelemetry,
 Datadog, and other adapters can be added without changing application or
 service code. `SENTRY_DSN` is retained as an optional Sentry adapter setting:

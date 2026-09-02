@@ -6,6 +6,26 @@
 #include <iostream>
 #include <stdexcept>
 
+namespace {
+class RecordingReporter final : public observability::ErrorReporter {
+public:
+  void captureException(
+      const std::exception& error, const std::string& requestId,
+      const observability::ErrorContext& context) noexcept override {
+    (void)error;
+    lastRequestId = requestId;
+    lastContext = context;
+    ++captures;
+  }
+
+  std::string provider() const override { return "test"; }
+
+  int captures{0};
+  std::string lastRequestId;
+  observability::ErrorContext lastContext;
+};
+}  // namespace
+
 int main() {
   auto request = drogon::HttpRequest::newHttpRequest();
   request->addHeader("X-Request-ID", "test-request-id");
@@ -40,6 +60,34 @@ int main() {
     throw std::runtime_error("test error");
   } catch (const std::exception& error) {
     observability::captureException(error, "test-request-id");
+  }
+
+  auto* recordingReporter = static_cast<RecordingReporter*>(nullptr);
+  observability::registerErrorReporterProvider(
+      "test", [&](const observability::ErrorReporterConfig& configuration)
+          -> std::unique_ptr<observability::ErrorReporter> {
+        if (configuration.provider != "test") {
+          return std::unique_ptr<observability::ErrorReporter>{};
+        }
+        auto reporter = std::make_unique<RecordingReporter>();
+        recordingReporter = reporter.get();
+        return reporter;
+      });
+  observability::configureErrorReporter("test", "adapter-config");
+  if (observability::errorReporter().provider() != "test" ||
+      recordingReporter == nullptr) {
+    std::cerr << "registered error reporter was not enabled\n";
+    return 1;
+  }
+  try {
+    throw std::runtime_error("adapter error");
+  } catch (const std::exception& error) {
+    observability::captureException(error, "adapter-request");
+  }
+  if (recordingReporter->captures != 1 ||
+      recordingReporter->lastRequestId != "adapter-request") {
+    std::cerr << "registered error reporter did not receive the event\n";
+    return 1;
   }
 
   return 0;
