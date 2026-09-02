@@ -38,7 +38,7 @@ WORKDIR /app
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
       ca-certificates curl libbrotli1 libc-ares2 libgcc-s1 libjsoncpp25 \
-      libpq5 libssl3 libstdc++6 libuuid1 zlib1g && \
+      libpq5 libpqxx-6.4 libssl3 libstdc++6 libuuid1 zlib1g && \
     rm -rf /var/lib/apt/lists/* && \
     useradd --system --create-home --home-dir /app --shell /usr/sbin/nologin appuser
 
