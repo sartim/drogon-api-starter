@@ -144,8 +144,10 @@ for the Docker build, unit tests, and health-check integration test.
 
 The unit tests do not require PostgreSQL or a running API server. The server
 is started separately with `./build/drogon_user_service --action=run-server`.
-At startup, the service reads `.env`, builds the Drogon configuration in
-memory, and does not create or require a `config.json` file.
+At startup, the service reads `.env`, validates it into a typed configuration,
+and builds the Drogon configuration in memory. Environment variables override
+matching `.env` values, which allows production deployments to use a secret
+manager without writing a `config.json` file.
 
 The liveness endpoint is implemented by the application at
 `GET /health` and returns `{"status":"up"}` without requiring a database

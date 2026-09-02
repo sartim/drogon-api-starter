@@ -17,3 +17,9 @@ add_executable(observability_test observability_test.cc
 target_include_directories(observability_test PRIVATE ${CMAKE_SOURCE_DIR})
 target_link_libraries(observability_test PRIVATE Drogon::Drogon)
 add_test(NAME ObservabilityFoundation COMMAND observability_test)
+
+add_executable(config_test config_test.cc
+               ${CMAKE_SOURCE_DIR}/config/AppConfig.cc)
+target_include_directories(config_test PRIVATE ${CMAKE_SOURCE_DIR})
+target_link_libraries(config_test PRIVATE Drogon::Drogon)
+add_test(NAME AppConfigValidation COMMAND config_test)
