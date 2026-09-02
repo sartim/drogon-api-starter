@@ -29,6 +29,7 @@ theme:
         name: Switch to light mode
 nav:
   - Home: index.md
+  - Operations runbook: OPERATIONS.md
   - Roadmap: ROADMAP.md
   - OpenAPI: openapi.yaml
   - Swagger UI: swagger.html

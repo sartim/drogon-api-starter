@@ -18,6 +18,7 @@ profile adds authentication, users, roles, RBAC, migrations, and tests.
 ## Documentation
 
 - [Engineering roadmap](ROADMAP.md)
+- [Operations runbook](OPERATIONS.md)
 - [OpenAPI specification](openapi.yaml)
 - [Swagger UI source](swagger.html)
 - [Repository README](https://github.com/sartim/drogon-api-starter#readme)

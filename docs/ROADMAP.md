@@ -51,8 +51,8 @@ is available when a developer wants only the platform foundation.
       contextual fields while keeping reporting asynchronous and fail-open.
 - [x] Keep migrations as an explicit deployment job, never run them from every
       application replica.
-- [ ] Add graceful shutdown, connection-pool tuning, timeouts, and rate limits.
-- [ ] Add an operational runbook for backups, rollbacks, migrations, and
+- [x] Add graceful shutdown, connection-pool tuning, timeouts, and rate limits.
+- [x] Add an operational runbook for backups, rollbacks, migrations, and
       incident response.
 
 ## P2 — Following: reusable project generation
