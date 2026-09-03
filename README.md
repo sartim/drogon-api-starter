@@ -301,6 +301,11 @@ Use `OBSERVABILITY_TIMEOUT_SECONDS` to bound delivery attempts. Invalid
 configuration and failed delivery fall back to no-op behavior and never block
 request handling.
 
+Events are buffered briefly and delivered in bounded batches. Tune
+`OBSERVABILITY_BATCH_SIZE` and `OBSERVABILITY_BATCH_DELAY_SECONDS` for the
+collector and traffic profile; queued events are best effort and may be
+dropped during shutdown or when the queue is full.
+
 Keep provider credentials in the deployment secret store rather than committing
 them to `.env` or source control. Unsupported providers currently fall back to
 the no-op reporter and do not prevent startup; provider adapters will be added

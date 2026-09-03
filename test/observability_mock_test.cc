@@ -21,14 +21,15 @@ public:
     {
       std::lock_guard lock(mutex_);
       body_ = body;
+      ++requests_;
     }
     condition_.notify_one();
   }
 
-  bool waitForBody() {
+  bool waitForRequests(const int expected) {
     std::unique_lock lock(mutex_);
     return condition_.wait_for(lock, std::chrono::seconds(2),
-                               [this] { return !body_.empty(); });
+                               [this, expected] { return requests_ >= expected; });
   }
 
   std::string body() const {
@@ -40,6 +41,7 @@ private:
   mutable std::mutex mutex_;
   std::condition_variable condition_;
   std::string body_;
+  int requests_{0};
 };
 
 std::uint16_t availablePort() {
@@ -95,12 +97,17 @@ int main() {
   std::thread server([] { drogon::app().run(); });
 
   std::runtime_error error("mock observability error");
+  const observability::ErrorContext batching{{"batch_size", "10"},
+                                             {"batch_delay_seconds", "0.1"}};
   observability::configureErrorReporter(
-      "otlp", "http://127.0.0.1:" + std::to_string(port) + "/mock/otlp");
+      "otlp", "http://127.0.0.1:" + std::to_string(port) + "/mock/otlp",
+      batching);
   observability::captureException(error, "otlp-request");
-  if (!otlpEvent.waitForBody() ||
+  observability::captureException(error, "otlp-request-2");
+  if (!otlpEvent.waitForRequests(1) ||
       otlpEvent.body().find("mock observability error") == std::string::npos ||
-      otlpEvent.body().find("otlp-request") == std::string::npos) {
+      otlpEvent.body().find("otlp-request") == std::string::npos ||
+      otlpEvent.body().find("otlp-request-2") == std::string::npos) {
     std::cerr << "OTLP mock payload validation failed\n";
     drogon::app().quit();
     server.join();
@@ -108,11 +115,14 @@ int main() {
   }
 
   observability::configureErrorReporter(
-      "sentry", "http://public@127.0.0.1:" + std::to_string(port) + "/42");
+      "sentry", "http://public@127.0.0.1:" + std::to_string(port) + "/42",
+      batching);
   observability::captureException(error, "sentry-request");
-  if (!sentryEvent.waitForBody() ||
+  observability::captureException(error, "sentry-request-2");
+  if (!sentryEvent.waitForRequests(1) ||
       sentryEvent.body().find("mock observability error") == std::string::npos ||
-      sentryEvent.body().find("sentry-request") == std::string::npos) {
+      sentryEvent.body().find("sentry-request") == std::string::npos ||
+      sentryEvent.body().find("sentry-request-2") == std::string::npos) {
     std::cerr << "Sentry mock payload validation failed\n";
     drogon::app().quit();
     server.join();

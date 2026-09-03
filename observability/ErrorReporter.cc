@@ -5,10 +5,13 @@
 #include <drogon/HttpClient.h>
 #include <json/json.h>
 #include <cstdlib>
+#include <deque>
+#include <iterator>
 #include <mutex>
 #include <stdexcept>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 namespace observability {
 namespace {
@@ -50,29 +53,41 @@ public:
         found != settings.end()) {
       timeoutSeconds_ = std::stod(found->second);
     }
+    if (const auto found = settings.find("batch_size");
+        found != settings.end()) {
+      batchSize_ = std::stoul(found->second);
+    }
+    if (const auto found = settings.find("batch_delay_seconds");
+        found != settings.end()) {
+      batchDelaySeconds_ = std::stod(found->second);
+    }
+    if (batchSize_ == 0 || batchDelaySeconds_ <= 0.0) {
+      throw std::invalid_argument("invalid observability batch settings");
+    }
     client_ = drogon::HttpClient::newHttpClient(endpoint_);
+  }
+
+  ~HttpErrorReporter() override {
+    if (timerId_ != trantor::InvalidTimerId && client_ && client_->getLoop()) {
+      client_->getLoop()->invalidateTimer(timerId_);
+    }
   }
 
   void captureException(const std::exception& error,
                         const std::string& requestId,
                         const ErrorContext& context) noexcept override {
     try {
-      auto request = drogon::HttpRequest::newHttpRequest();
-      request->setMethod(drogon::Post);
-      request->setPath(requestPath_);
-      request->setContentTypeString(contentType());
-      request->setBody(payload(error, requestId, context));
-      const auto timeout = timeoutSeconds_;
-      client_->sendRequest(
-          request,
-          [](drogon::ReqResult result,
-             const drogon::HttpResponsePtr& response) {
-            if (result != drogon::ReqResult::Ok || !response ||
-                response->statusCode() >= 400) {
-              LOG_DEBUG << "Observability event delivery failed; continuing";
-            }
-          },
-          timeout);
+      bool flushImmediately = false;
+      {
+        std::lock_guard lock(queueMutex_);
+        queue_.push_back({error.what(), requestId, context});
+        flushImmediately = queue_.size() >= batchSize_;
+        if (!flushImmediately && timerId_ == trantor::InvalidTimerId) {
+          timerId_ = client_->getLoop()->runAfter(
+              batchDelaySeconds_, [this] { flush(); });
+        }
+      }
+      if (flushImmediately) flush();
     } catch (...) {
       // Reporting is best effort and must never affect application flow.
     }
@@ -81,17 +96,59 @@ public:
   std::string provider() const override { return provider_; }
 
 protected:
-  virtual std::string payload(const std::exception& error,
-                              const std::string& requestId,
-                              const ErrorContext& context) const = 0;
+  struct CapturedException {
+    std::string message;
+    std::string requestId;
+    ErrorContext context;
+  };
+
+  virtual std::string payload(
+      const std::vector<CapturedException>& events) const = 0;
   virtual const char* contentType() const { return "application/json"; }
 
 private:
+  void flush() noexcept {
+    try {
+      std::vector<CapturedException> events;
+      {
+        std::lock_guard lock(queueMutex_);
+        timerId_ = trantor::InvalidTimerId;
+        events.assign(std::make_move_iterator(queue_.begin()),
+                      std::make_move_iterator(queue_.end()));
+        queue_.clear();
+      }
+      if (events.empty()) return;
+      auto request = drogon::HttpRequest::newHttpRequest();
+      request->setMethod(drogon::Post);
+      request->setPath(requestPath_);
+      request->setContentTypeString(contentType());
+      request->setBody(payload(events));
+      const auto timeout = timeoutSeconds_;
+      client_->sendRequest(
+          request,
+          [](drogon::ReqResult result,
+             const drogon::HttpResponsePtr& response) {
+            if (result != drogon::ReqResult::Ok || !response ||
+                response->statusCode() >= 400) {
+              LOG_DEBUG << "Observability batch delivery failed; continuing";
+            }
+          },
+          timeout);
+    } catch (...) {
+      // Reporting is best effort and must never affect application flow.
+    }
+  }
+
   std::string provider_;
   std::string endpoint_;
   std::string requestPath_;
   drogon::HttpClientPtr client_;
   double timeoutSeconds_{1.0};
+  std::size_t batchSize_{10};
+  double batchDelaySeconds_{0.1};
+  std::mutex queueMutex_;
+  std::deque<CapturedException> queue_;
+  trantor::TimerId timerId_{trantor::InvalidTimerId};
 };
 
 class OtlpErrorReporter final : public HttpErrorReporter {
@@ -108,24 +165,24 @@ private:
     return {};
   }
 
-  std::string payload(const std::exception& error,
-                      const std::string& requestId,
-                      const ErrorContext& context) const override {
+  std::string payload(const std::vector<CapturedException>& events) const override {
     Json::Value body;
-    Json::Value record;
-    record["body"]["stringValue"] = error.what();
-    record["severityText"] = "ERROR";
-    record["attributes"] = Json::arrayValue;
-    auto addAttribute = [&record](const std::string& key,
-                                  const std::string& value) {
-      Json::Value attribute;
-      attribute["key"] = key;
-      attribute["value"]["stringValue"] = value;
-      record["attributes"].append(attribute);
-    };
-    if (!requestId.empty()) addAttribute("request.id", requestId);
-    for (const auto& [key, value] : context) addAttribute(key, value);
-    body["resourceLogs"][0]["scopeLogs"][0]["logRecords"].append(record);
+    for (const auto& event : events) {
+      Json::Value record;
+      record["body"]["stringValue"] = event.message;
+      record["severityText"] = "ERROR";
+      record["attributes"] = Json::arrayValue;
+      auto addAttribute = [&record](const std::string& key,
+                                    const std::string& value) {
+        Json::Value attribute;
+        attribute["key"] = key;
+        attribute["value"]["stringValue"] = value;
+        record["attributes"].append(attribute);
+      };
+      if (!event.requestId.empty()) addAttribute("request.id", event.requestId);
+      for (const auto& [key, value] : event.context) addAttribute(key, value);
+      body["resourceLogs"][0]["scopeLogs"][0]["logRecords"].append(record);
+    }
     Json::StreamWriterBuilder builder;
     builder["indentation"] = "";
     return Json::writeString(builder, body);
@@ -161,23 +218,26 @@ private:
            "/api/" + project + "/envelope/?sentry_version=7&sentry_key=" + key;
   }
 
-  std::string payload(const std::exception& error,
-                      const std::string& requestId,
-                      const ErrorContext& context) const override {
+  std::string payload(const std::vector<CapturedException>& events) const override {
     Json::Value header;
     header["type"] = "event";
-    Json::Value event;
-    event["exception"]["values"][0]["type"] = "std::exception";
-    event["exception"]["values"][0]["value"] = error.what();
-    if (!requestId.empty()) event["tags"]["request_id"] = requestId;
-    for (const auto& [key, value] : context) event["extra"][key] = value;
     Json::StreamWriterBuilder builder;
     builder["indentation"] = "";
-    Json::Value itemHeader;
-    itemHeader["type"] = "event";
-    return Json::writeString(builder, header) + "\n" +
-           Json::writeString(builder, itemHeader) + "\n" +
-           Json::writeString(builder, event);
+    std::string envelope = Json::writeString(builder, header);
+    for (const auto& captured : events) {
+      Json::Value event;
+      event["exception"]["values"][0]["type"] = "std::exception";
+      event["exception"]["values"][0]["value"] = captured.message;
+      if (!captured.requestId.empty())
+        event["tags"]["request_id"] = captured.requestId;
+      for (const auto& [key, value] : captured.context)
+        event["extra"][key] = value;
+      Json::Value itemHeader;
+      itemHeader["type"] = "event";
+      envelope += "\n" + Json::writeString(builder, itemHeader) + "\n" +
+                  Json::writeString(builder, event);
+    }
+    return envelope;
   }
 };
 

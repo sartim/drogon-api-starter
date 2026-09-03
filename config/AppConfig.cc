@@ -135,6 +135,10 @@ AppConfig AppConfig::fromValues(const std::map<std::string, std::string>& values
   config.otlpEndpoint = values.count("OTLP_ENDPOINT") ? values.at("OTLP_ENDPOINT") : "";
   config.observabilityTimeoutSeconds =
       seconds(values, "OBSERVABILITY_TIMEOUT_SECONDS", 1.0);
+  config.observabilityBatchSize =
+      number(values, "OBSERVABILITY_BATCH_SIZE", 10);
+  config.observabilityBatchDelaySeconds =
+      seconds(values, "OBSERVABILITY_BATCH_DELAY_SECONDS", 0.1);
   config.httpHost = values.count("HTTP_HOST") ? values.at("HTTP_HOST") : "0.0.0.0";
   config.httpPort = number(values, "HTTP_PORT", 8000);
   config.redisEnabled = flag(values, "REDIS_ENABLED", false);
@@ -167,7 +171,8 @@ AppConfig AppConfig::load(const std::filesystem::path& envFile) {
   for (const auto& key : {"SECRET_KEY", "DB_HOST", "DB_PORT", "DB_NAME",
                           "DB_USER", "DB_PASSWORD", "SENTRY_DSN",
                           "ERROR_TRACKING_PROVIDER", "OTLP_ENDPOINT",
-                          "OBSERVABILITY_TIMEOUT_SECONDS", "HTTP_HOST",
+                          "OBSERVABILITY_TIMEOUT_SECONDS", "OBSERVABILITY_BATCH_SIZE",
+                          "OBSERVABILITY_BATCH_DELAY_SECONDS", "HTTP_HOST",
                           "HTTP_PORT", "HTTP_IDLE_CONNECTION_TIMEOUT_SECONDS",
                           "RATE_LIMIT_REQUESTS", "RATE_LIMIT_WINDOW_SECONDS",
                           "DB_CONNECTION_POOL_SIZE", "DB_QUERY_TIMEOUT_SECONDS",

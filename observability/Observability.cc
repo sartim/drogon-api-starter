@@ -104,7 +104,9 @@ std::string Metrics::prometheus() const {
 void configure(const std::string& configuredProvider,
                const std::string& configuredDsn,
                const std::string& configuredOtlpEndpoint,
-               const double timeoutSeconds) {
+               const double timeoutSeconds,
+               const int batchSize,
+               const double batchDelaySeconds) {
   const char* environmentDsn = std::getenv("SENTRY_DSN");
   const auto& sentryDsn = configuredDsn.empty() && environmentDsn != nullptr
                               ? std::string(environmentDsn)
@@ -118,6 +120,8 @@ void configure(const std::string& configuredProvider,
     settings["otlp_endpoint"] = configuredOtlpEndpoint;
   }
   settings["timeout_seconds"] = std::to_string(timeoutSeconds);
+  settings["batch_size"] = std::to_string(batchSize);
+  settings["batch_delay_seconds"] = std::to_string(batchDelaySeconds);
   configureErrorReporter(provider, sentryDsn, settings);
 }
 

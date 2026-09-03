@@ -21,6 +21,8 @@ struct AppConfig {
   std::string errorTrackingProvider{"none"};
   std::string otlpEndpoint;
   double observabilityTimeoutSeconds{1.0};
+  int observabilityBatchSize{10};
+  double observabilityBatchDelaySeconds{0.1};
   std::string httpHost{"0.0.0.0"};
   int httpPort{8000};
   bool redisEnabled{false};
