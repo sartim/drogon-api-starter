@@ -36,6 +36,11 @@ users="$temporary_root/users"
 "$project_root/scripts/drogon-starter" init users-api "$users"
 for file in CMakeLists.txt CMakePresets.json README.md main.cc test/CMakeLists.txt; do
   assert_file "$users/$file"
+  expected="$temporary_root/user-expected-${file//\//-}"
+  git -C "$project_root" show "HEAD:$file" \
+    | sed 's/@PROJECT_NAME@/users-api/g; s/drogon_user_service/users-api/g' \
+    > "$expected"
+  diff --unified=3 "$expected" "$users/$file"
 done
 for directory in platform examples migrations deploy; do
   assert_file "$users/$directory/.gitkeep"
