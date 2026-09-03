@@ -38,6 +38,14 @@ explicit_path="$temporary_root/explicit-path"
 assert_file "$explicit_path/CMakeLists.txt"
 assert_no_placeholders "$explicit_path"
 
+upgraded="$temporary_root/upgraded"
+"$project_root/scripts/drogon-starter" init payments-api "$upgraded" --profile minimal
+"$project_root/scripts/drogon-starter" enable user-service "$upgraded" --force
+assert_file "$upgraded/controllers/UserController.cc"
+assert_file "$upgraded/services/UserService.cc"
+assert_no_placeholders "$upgraded"
+rg -q '"profile":"user-service"' "$upgraded/.drogon-starter.json"
+
 users="$temporary_root/users"
 "$project_root/scripts/drogon-starter" init users-api "$users"
 for file in CMakeLists.txt CMakePresets.json README.md main.cc test/CMakeLists.txt; do

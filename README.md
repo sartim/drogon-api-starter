@@ -41,6 +41,12 @@ capabilities without changing the generator contract. CI runs a generator
 contract test for both profiles and compares the minimal output with its
 checked-in golden templates.
 
+You can upgrade a generated minimal project to the maintained user-service
+batteries explicitly. This replaces the generated scaffold files, so review
+the resulting Git diff before committing:
+
+    $ ./scripts/drogon-starter enable user-service ../payments-api --force
+
 ## Generate Drogon components
 
 After installing `drogon_ctl` (the native setup scripts build it automatically),

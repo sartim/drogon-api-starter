@@ -12,6 +12,8 @@ The generator creates a fresh project in a specified empty directory:
 ./scripts/drogon-starter init users-api ../users-api --profile user-service
 # Equivalent explicit path form:
 ./scripts/drogon-starter init payments-api --path ../payments-api --profile minimal
+# Upgrade a generated minimal project:
+./scripts/drogon-starter enable user-service ../payments-api --force
 ```
 
 The `minimal` profile provides the platform foundation. The `user-service`
