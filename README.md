@@ -119,6 +119,13 @@ ctest --preset user-service
 * [Bcrypt](https://git@github.com:hilch/Bcrypt.cpp.git)
 * [OpenSSL](https://github.com/openssl/openssl.git)
 
+## Deployment packaging
+
+The starter does not prescribe Kubernetes, Helm, or another deployment
+orchestrator. Docker Compose is provided for development and CI validation;
+developers and platform teams can choose the production deployment model that
+fits their environment.
+
 ## Hosted documentation
 
 The Markdown documentation is built with MkDocs Material and published by GitHub Actions to
