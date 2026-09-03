@@ -15,6 +15,10 @@ int main() {
       {"DB_USER", "tester"},
       {"DB_PASSWORD", "password"},
       {"ERROR_TRACKING_PROVIDER", "none"},
+      {"OTLP_ENDPOINT", "http://collector:4318/v1/logs"},
+      {"OBSERVABILITY_TIMEOUT_SECONDS", "2"},
+      {"OBSERVABILITY_BATCH_SIZE", "20"},
+      {"OBSERVABILITY_BATCH_DELAY_SECONDS", "0.25"},
       {"HTTP_HOST", "127.0.0.1"},
       {"HTTP_PORT", "8080"},
       {"HTTP_IDLE_CONNECTION_TIMEOUT_SECONDS", "45"},
@@ -55,6 +59,13 @@ int main() {
   }
   if (config.errorTrackingProvider != "none") {
     std::cerr << "error tracking provider was not parsed correctly\n";
+    return 1;
+  }
+  if (config.otlpEndpoint != "http://collector:4318/v1/logs" ||
+      config.observabilityTimeoutSeconds != 2.0 ||
+      config.observabilityBatchSize != 20 ||
+      config.observabilityBatchDelaySeconds != 0.25) {
+    std::cerr << "observability batching configuration was not parsed correctly\n";
     return 1;
   }
   if (config.redisConnectionPoolSize != 3 ||

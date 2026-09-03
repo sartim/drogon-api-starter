@@ -26,7 +26,9 @@ std::string traceparent(const drogon::HttpRequestPtr& request);
 void configure(const std::string& provider = {},
                const std::string& sentryDsn = {},
                const std::string& otlpEndpoint = {},
-               double timeoutSeconds = 1.0);
+               double timeoutSeconds = 1.0,
+               int batchSize = 10,
+               double batchDelaySeconds = 0.1);
 Metrics& metrics();
 
 } // namespace observability
