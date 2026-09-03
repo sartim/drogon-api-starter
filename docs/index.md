@@ -10,6 +10,8 @@ The generator creates a fresh project in a specified empty directory:
 ```sh
 ./scripts/drogon-starter init payments-api ../payments-api --profile minimal
 ./scripts/drogon-starter init users-api ../users-api --profile user-service
+# Equivalent explicit path form:
+./scripts/drogon-starter init payments-api --path ../payments-api --profile minimal
 ```
 
 The `minimal` profile provides the platform foundation. The `user-service`

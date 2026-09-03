@@ -32,6 +32,12 @@ for directory in platform examples migrations deploy; do
 done
 assert_no_placeholders "$minimal"
 
+explicit_path="$temporary_root/explicit-path"
+"$project_root/scripts/drogon-starter" init reports-api \
+  --path "$explicit_path" --profile minimal
+assert_file "$explicit_path/CMakeLists.txt"
+assert_no_placeholders "$explicit_path"
+
 users="$temporary_root/users"
 "$project_root/scripts/drogon-starter" init users-api "$users"
 for file in CMakeLists.txt CMakePresets.json README.md main.cc test/CMakeLists.txt; do

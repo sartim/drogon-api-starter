@@ -18,6 +18,11 @@ repository directly. The destination must be new or empty:
 
     $ ./scripts/drogon-starter init payments-api ../payments-api
 
+The destination can also be supplied explicitly with `--path`, which is useful
+when the project name and filesystem location are far apart:
+
+    $ ./scripts/drogon-starter init payments-api --path /tmp/payments-api
+
 By default this generates the maintained user-service profile with JWT
 authentication, users, roles, RBAC, migrations, tests, and the platform
 foundation already present in this repository:
