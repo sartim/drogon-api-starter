@@ -61,7 +61,7 @@ is available when a developer wants only the platform foundation.
       `migrations`, `tests`, `deploy`, and `docs`.
 - [ ] Keep example-specific migrations, configuration, and tests isolated from
       the platform foundation.
-- [ ] Add a generator wrapper around `drogon_ctl` for controllers, filters,
+- [x] Add a generator wrapper around `drogon_ctl` for controllers, filters,
       models, and views.
 - [x] Add golden-output tests for generated minimal and user-service projects.
 - [ ] Publish contribution, compatibility, and release-maintenance policies.

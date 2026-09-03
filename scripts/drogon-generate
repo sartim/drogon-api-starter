@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat >&2 <<'USAGE'
+Usage: drogon-generate <controller|filter|model|view|plugin> <name> [options]
+
+Options:
+  -o, --output <directory>  Directory for generated files
+  --                       Pass remaining arguments to drogon_ctl
+
+Examples:
+  drogon-generate controller UserController -o app/controllers
+  drogon-generate filter AuthFilter -o app/filters
+  drogon-generate model schemas/users.json -o models
+USAGE
+  exit 2
+}
+
+[[ ${1:-} != "" && ${1:-} != "-h" && ${1:-} != "--help" ]] || usage
+kind=$1
+name=${2:-}
+[[ -n "$name" ]] || usage
+shift 2
+
+case "$kind" in
+  controller|filter|model|view|plugin) ;;
+  *) echo "Unsupported generator kind: $kind" >&2; usage ;;
+esac
+
+output=""
+passthrough=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -o|--output)
+      [[ $# -ge 2 ]] || usage
+      output=$2
+      shift 2
+      ;;
+    --)
+      shift
+      passthrough+=("$@")
+      break
+      ;;
+    *) passthrough+=("$1"); shift ;;
+  esac
+done
+
+find_ctl() {
+  if [[ -n "${DROGON_CTL:-}" && -x "$DROGON_CTL" ]]; then
+    printf '%s\n' "$DROGON_CTL"
+    return
+  fi
+  command -v drogon_ctl 2>/dev/null && return
+  for candidate in .local/bin/drogon_ctl /usr/local/bin/drogon_ctl; do
+    if [[ -x "$candidate" ]]; then
+      printf '%s\n' "$(cd "$(dirname "$candidate")" && pwd)/$(basename "$candidate")"
+      return
+    fi
+  done
+  echo "drogon_ctl was not found; install Drogon or set DROGON_CTL" >&2
+  exit 1
+}
+
+ctl=$(find_ctl)
+if [[ -z "$output" ]]; then
+  case "$kind" in
+    controller) output=app/controllers ;;
+    filter) output=app/filters ;;
+    model) output=models ;;
+    view) output=views ;;
+    plugin) output=app/plugins ;;
+  esac
+fi
+mkdir -p "$output"
+
+command_args=("$ctl" create "$kind" "$name")
+if [[ "$kind" == "model" || "$kind" == "view" ]]; then
+  command_args+=(-o "$output")
+fi
+if [[ ${#passthrough[@]} -gt 0 ]]; then
+  command_args+=("${passthrough[@]}")
+fi
+
+if [[ "$kind" == "model" || "$kind" == "view" ]]; then
+  "${command_args[@]}"
+else
+  (
+    cd "$output"
+    "${command_args[@]}"
+  )
+fi
