@@ -24,6 +24,13 @@ target_include_directories(observability_test PRIVATE ${CMAKE_SOURCE_DIR})
 target_link_libraries(observability_test PRIVATE Drogon::Drogon)
 add_test(NAME ObservabilityFoundation COMMAND observability_test)
 
+add_executable(observability_mock_test observability_mock_test.cc
+               ${CMAKE_SOURCE_DIR}/observability/ErrorReporter.cc)
+target_include_directories(observability_mock_test PRIVATE ${CMAKE_SOURCE_DIR})
+target_link_libraries(observability_mock_test PRIVATE Drogon::Drogon)
+add_test(NAME ObservabilityMockEndpoints COMMAND observability_mock_test)
+set_tests_properties(ObservabilityMockEndpoints PROPERTIES SKIP_RETURN_CODE 77)
+
 add_executable(config_test config_test.cc
                ${CMAKE_SOURCE_DIR}/config/AppConfig.cc)
 target_include_directories(config_test PRIVATE ${CMAKE_SOURCE_DIR})
