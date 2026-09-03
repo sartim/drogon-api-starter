@@ -285,6 +285,17 @@ service code. `SENTRY_DSN` is retained as an optional Sentry adapter setting:
 Alternatively, add the value to a local `.env` copied from `.env.example`.
 Leave `SENTRY_DSN` empty when Sentry is not available.
 
+The built-in OTLP adapter uses Drogon’s asynchronous HTTP client and requires
+only an endpoint; no OpenTelemetry SDK is required. Set
+`ERROR_TRACKING_PROVIDER=otlp` and `OTLP_ENDPOINT` to an OTLP/HTTP logs
+endpoint, for example:
+
+    $ export OTLP_ENDPOINT="http://localhost:4318/v1/logs"
+
+Use `OBSERVABILITY_TIMEOUT_SECONDS` to bound delivery attempts. Invalid
+configuration and failed delivery fall back to no-op behavior and never block
+request handling.
+
 Keep provider credentials in the deployment secret store rather than committing
 them to `.env` or source control. Unsupported providers currently fall back to
 the no-op reporter and do not prevent startup; provider adapters will be added
