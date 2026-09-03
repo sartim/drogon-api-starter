@@ -92,6 +92,26 @@ int main() {
     return 1;
   }
 
+  observability::configureErrorReporter("test");
+  request->addHeader(
+      "traceparent",
+      "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01");
+  try {
+    throw std::runtime_error("request context error");
+  } catch (const std::exception& error) {
+    observability::captureException(error, request,
+                                    {{"service.version", "test"}});
+  }
+  if (recordingReporter->captures != 1 ||
+      recordingReporter->lastContext.at("request.id") != "test-request-id" ||
+      recordingReporter->lastContext.at("traceparent") !=
+          "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01" ||
+      recordingReporter->lastContext.at("http.method") != "GET" ||
+      recordingReporter->lastContext.at("service.version") != "test") {
+    std::cerr << "request observability context was not propagated\n";
+    return 1;
+  }
+
   observability::configureErrorReporter("otlp", "http://127.0.0.1:4318/v1/logs");
   if (observability::errorReporter().provider() != "otlp") {
     std::cerr << "OTLP provider was not enabled\n";

@@ -285,6 +285,11 @@ service code. `SENTRY_DSN` is retained as an optional Sentry adapter setting:
 Alternatively, add the value to a local `.env` copied from `.env.example`.
 Leave `SENTRY_DSN` empty when Sentry is not available.
 
+For exception handling inside a controller or service, pass the Drogon request
+to `observability::captureException(error, request)`. The platform enriches
+the event with the request ID, W3C `traceparent`, HTTP method, and path while
+allowing application context fields to be added or override defaults.
+
 The built-in OTLP adapter uses Drogon’s asynchronous HTTP client and requires
 only an endpoint; no OpenTelemetry SDK is required. Set
 `ERROR_TRACKING_PROVIDER=otlp` and `OTLP_ENDPOINT` to an OTLP/HTTP logs
