@@ -64,6 +64,8 @@ is available when a developer wants only the platform foundation.
 - [x] Add a generator wrapper around `drogon_ctl` for controllers, filters,
       models, and views.
 - [x] Add golden-output tests for generated minimal and user-service projects.
+- [x] Support an explicit, opt-in upgrade from a generated minimal project to
+      the user-service batteries with a profile marker and safety confirmation.
 - [x] Publish contribution, compatibility, and release-maintenance policies.
 
 ## P3 — Future: optional gRPC adapter

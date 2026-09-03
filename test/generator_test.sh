@@ -13,9 +13,23 @@ assert_file() {
 }
 
 assert_no_placeholders() {
-  if rg --hidden --glob '!.git/**' '@PROJECT_NAME@|drogon_user_service' "$1"; then
+  local found=false
+  if command -v rg >/dev/null 2>&1; then
+    rg --hidden --glob '!.git/**' '@PROJECT_NAME@|drogon_user_service' "$1" && found=true || true
+  else
+    grep -R -n -E --exclude-dir=.git '@PROJECT_NAME@|drogon_user_service' "$1" && found=true || true
+  fi
+  if [[ "$found" == true ]]; then
     echo "Generated project contains an unresolved placeholder: $1" >&2
     exit 1
+  fi
+}
+
+assert_contains() {
+  if command -v rg >/dev/null 2>&1; then
+    rg -q "$1" "$2"
+  else
+    grep -q -E "$1" "$2"
   fi
 }
 
@@ -37,6 +51,14 @@ explicit_path="$temporary_root/explicit-path"
   --path "$explicit_path" --profile minimal
 assert_file "$explicit_path/CMakeLists.txt"
 assert_no_placeholders "$explicit_path"
+
+upgraded="$temporary_root/upgraded"
+"$project_root/scripts/drogon-starter" init payments-api "$upgraded" --profile minimal
+"$project_root/scripts/drogon-starter" enable user-service "$upgraded" --force
+assert_file "$upgraded/controllers/UserController.cc"
+assert_file "$upgraded/services/UserService.cc"
+assert_no_placeholders "$upgraded"
+assert_contains '"profile":"user-service"' "$upgraded/.drogon-starter.json"
 
 users="$temporary_root/users"
 "$project_root/scripts/drogon-starter" init users-api "$users"

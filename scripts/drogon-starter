@@ -3,10 +3,52 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 init <project-name> [<empty-directory>] [--path <empty-directory>] [--profile user-service|minimal]" >&2
+  echo "       $0 enable user-service <generated-project> --force" >&2
   exit 2
 }
 
-[[ ${1:-} == "init" ]] || usage
+command=${1:-}
+if [[ "$command" == "enable" ]]; then
+  [[ ${2:-} == "user-service" && -n ${3:-} ]] || usage
+  destination=$3
+  force=false
+  shift 3
+  while [[ $# -gt 0 ]]; do
+    [[ "$1" == "--force" && "$force" == false ]] || usage
+    force=true
+    shift
+  done
+  [[ "$force" == true ]] || {
+    echo "Enabling a feature replaces the generated scaffold; pass --force to continue." >&2
+    exit 2
+  }
+  [[ -d "$destination" && -f "$destination/.drogon-starter.json" ]] || {
+    echo "Not a generated Drogon starter project: $destination" >&2
+    exit 1
+  }
+  profile=$(sed -n 's/.*"profile"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$destination/.drogon-starter.json")
+  project_name=$(sed -n 's/.*"project_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$destination/.drogon-starter.json")
+  [[ "$profile" == "minimal" && -n "$project_name" ]] || {
+    echo "Only a minimal generated project can be upgraded to user-service." >&2
+    exit 1
+  }
+  source_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  temporary_root=$(mktemp -d)
+  trap 'rm -rf "$temporary_root"' EXIT
+  git -C "$source_root" archive --format=tar HEAD | tar -x -C "$temporary_root"
+  find "$temporary_root" -type f -not -path '*/.git/*' -exec sed -i.bak "s/@PROJECT_NAME@/$project_name/g" {} +
+  find "$temporary_root" -type f -not -path '*/.git/*' -exec sed -i.bak "s/drogon_user_service/$project_name/g" {} +
+  find "$temporary_root" -name '*.bak' -delete
+  cp -R "$temporary_root/." "$destination/"
+  sed -i.bak 's/"profile":"minimal"/"profile":"user-service"/' \
+    "$destination/.drogon-starter.json"
+  rm -f "$destination/.drogon-starter.json.bak"
+  echo "Enabled user-service profile in $destination"
+  echo "Review the generated changes before committing them."
+  exit 0
+fi
+
+[[ "$command" == "init" ]] || usage
 project_name=${2:-}
 [[ -n "$project_name" ]] || usage
 destination=
