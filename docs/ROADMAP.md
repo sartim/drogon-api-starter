@@ -48,6 +48,8 @@ is available when a developer wants only the platform foundation.
 - [x] Add provider adapters for OpenTelemetry/OTLP and Sentry without exposing
       vendor SDKs to application or service code; both adapters are
       asynchronous and fail open.
+- [x] Validate OTLP and Sentry payload delivery against a local mock collector
+      in hosted CI without requiring vendor credentials.
 - [ ] Propagate request ID, trace ID, route, status, version, and bounded
       contextual fields while keeping reporting asynchronous and fail-open.
 - [x] Keep migrations as an explicit deployment job, never run them from every
