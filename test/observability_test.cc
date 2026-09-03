@@ -92,6 +92,23 @@ int main() {
     return 1;
   }
 
+  observability::configureErrorReporter("otlp", "http://127.0.0.1:4318/v1/logs");
+  if (observability::errorReporter().provider() != "otlp") {
+    std::cerr << "OTLP provider was not enabled\n";
+    return 1;
+  }
+  observability::configureErrorReporter("sentry",
+                                        "https://public@example.com/42");
+  if (observability::errorReporter().provider() != "sentry") {
+    std::cerr << "Sentry provider was not enabled\n";
+    return 1;
+  }
+  observability::configureErrorReporter("sentry", "not-a-dsn");
+  if (observability::errorReporter().provider() != "none") {
+    std::cerr << "invalid Sentry DSN did not fail open\n";
+    return 1;
+  }
+
   observability::RateLimiter limiter(2, std::chrono::seconds(60));
   if (!limiter.allow("client") || !limiter.allow("client") ||
       limiter.allow("client") || !limiter.allow("other")) {

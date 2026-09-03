@@ -19,6 +19,8 @@ struct AppConfig {
   std::string dbPassword;
   std::string sentryDsn;
   std::string errorTrackingProvider{"none"};
+  std::string otlpEndpoint;
+  double observabilityTimeoutSeconds{1.0};
   std::string httpHost{"0.0.0.0"};
   int httpPort{8000};
   bool redisEnabled{false};
