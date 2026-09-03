@@ -42,7 +42,8 @@ void registerErrorReporterProvider(const std::string& provider,
 
 ErrorReporter& errorReporter();
 void configureErrorReporter(const std::string& provider,
-                            const std::string& sentryDsn = {});
+                            const std::string& sentryDsn = {},
+                            const ErrorContext& settings = {});
 void captureException(const std::exception& error,
                       const std::string& requestId = {},
                       const ErrorContext& context = {}) noexcept;

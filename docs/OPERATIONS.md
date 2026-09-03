@@ -15,8 +15,9 @@ is a developer or platform-team choice.
   accounting for every application replica and other clients.
 - Keep `REDIS_ENABLED=false` unless Redis is available and the service was
   built with Redis support.
-- Configure `SENTRY_DSN` and an optional registered error-reporting adapter
-  only when the provider is ready to receive events.
+- Configure `ERROR_TRACKING_PROVIDER` as `none`, `sentry`, or `otlp`. Sentry
+  uses `SENTRY_DSN`; OTLP/HTTP uses `OTLP_ENDPOINT`.
+  Enable a provider only when it is ready to receive events.
 
 ## Local or Compose startup
 

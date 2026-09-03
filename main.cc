@@ -225,7 +225,8 @@ void runServer(const config::AppConfig &appConfig) {
       std::chrono::seconds(appConfig.rateLimitWindowSeconds));
   cache::RedisCache::configure(appConfig.redisEnabled);
   observability::configure(appConfig.errorTrackingProvider,
-                           appConfig.sentryDsn);
+                           appConfig.sentryDsn, appConfig.otlpEndpoint,
+                           appConfig.observabilityTimeoutSeconds);
 
   app().registerPreRoutingAdvice([](const HttpRequestPtr &request) {
     const auto id = observability::requestId(request);

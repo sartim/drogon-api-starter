@@ -24,7 +24,9 @@ private:
 std::string requestId(const drogon::HttpRequestPtr& request);
 std::string traceparent(const drogon::HttpRequestPtr& request);
 void configure(const std::string& provider = {},
-               const std::string& sentryDsn = {});
+               const std::string& sentryDsn = {},
+               const std::string& otlpEndpoint = {},
+               double timeoutSeconds = 1.0);
 Metrics& metrics();
 
 } // namespace observability

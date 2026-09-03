@@ -102,7 +102,9 @@ std::string Metrics::prometheus() const {
 }
 
 void configure(const std::string& configuredProvider,
-               const std::string& configuredDsn) {
+               const std::string& configuredDsn,
+               const std::string& configuredOtlpEndpoint,
+               const double timeoutSeconds) {
   const char* environmentDsn = std::getenv("SENTRY_DSN");
   const auto& sentryDsn = configuredDsn.empty() && environmentDsn != nullptr
                               ? std::string(environmentDsn)
@@ -111,7 +113,12 @@ void configure(const std::string& configuredProvider,
   const auto& provider = configuredProvider.empty() && environmentProvider != nullptr
                              ? std::string(environmentProvider)
                              : configuredProvider;
-  configureErrorReporter(provider, sentryDsn);
+  ErrorContext settings;
+  if (!configuredOtlpEndpoint.empty()) {
+    settings["otlp_endpoint"] = configuredOtlpEndpoint;
+  }
+  settings["timeout_seconds"] = std::to_string(timeoutSeconds);
+  configureErrorReporter(provider, sentryDsn, settings);
 }
 
 } // namespace observability

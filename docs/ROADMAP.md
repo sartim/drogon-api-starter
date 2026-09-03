@@ -45,8 +45,9 @@ is available when a developer wants only the platform foundation.
 
 ## P1 — Next: portable observability and deployment operations
 
-- [ ] Add provider adapters for OpenTelemetry/OTLP and Sentry without exposing
-      vendor SDKs to application or service code.
+- [x] Add provider adapters for OpenTelemetry/OTLP and Sentry without exposing
+      vendor SDKs to application or service code; both adapters are
+      asynchronous and fail open.
 - [ ] Propagate request ID, trace ID, route, status, version, and bounded
       contextual fields while keeping reporting asynchronous and fail-open.
 - [x] Keep migrations as an explicit deployment job, never run them from every
