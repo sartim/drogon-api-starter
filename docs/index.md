@@ -34,7 +34,12 @@ profile adds authentication, users, roles, RBAC, migrations, and tests.
 - Optional Redis caching with fail-open behavior
 - JWT authentication and RBAC batteries
 - Liveness, readiness, metrics, structured logging, and trace propagation
-- Docker Compose, Kubernetes manifests, and hosted CI validation
+- Docker Compose and hosted CI validation
+
+Deployment packaging is intentionally left to the developer or platform team.
+Consumers can choose Helm, Kubernetes manifests, another orchestrator, or a
+managed container platform without the starter prescribing one deployment
+model.
 
 ## Local development
 
