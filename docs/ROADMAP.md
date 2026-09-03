@@ -59,8 +59,8 @@ is available when a developer wants only the platform foundation.
 
 - [x] Define a stable generated layout for `app`, `platform`, `examples`,
       `migrations`, `tests`, `deploy`, and `docs`.
-- [ ] Keep example-specific migrations, configuration, and tests isolated from
-      the platform foundation.
+- [x] Keep user-service source ownership explicit in the profile build boundary;
+      the minimal profile no longer compiles user/RBAC components.
 - [x] Add a generator wrapper around `drogon_ctl` for controllers, filters,
       models, and views.
 - [x] Add golden-output tests for generated minimal and user-service projects.

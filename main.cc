@@ -5,14 +5,18 @@
 #endif
 #include "config/AppConfig.h"
 #include "cache/RedisCache.h"
+#ifdef ENABLE_USER_SERVICE
 #include "models/Users.h"
+#endif
 #include "observability/Observability.h"
 #include "observability/RateLimiter.h"
+#ifdef ENABLE_USER_SERVICE
 #include "tables/PermissionTable.h"
 #include "tables/RolePermissionTable.h"
 #include "tables/RoleTable.h"
 #include "tables/UserPermissionTable.h"
 #include "tables/UserTable.h"
+#endif
 #include <drogon/HttpAppFramework.h>
 #include <filesystem>
 #include <chrono>
@@ -22,8 +26,11 @@
 using namespace std;
 using namespace drogon;
 using namespace drogon::orm;
+#ifdef ENABLE_USER_SERVICE
 using namespace drogon_model::drogon_user_service;
+#endif
 
+#ifdef ENABLE_USER_SERVICE
 void createTables(const string &connectionString) {
   // User table
   UserTable userTable;
@@ -45,6 +52,7 @@ void createTables(const string &connectionString) {
   RolePermissionTable rolePermissionTable;
   rolePermissionTable.create(connectionString);
 }
+#endif
 
 void registerRoutes() {
   auto healthHandler = [](const HttpRequestPtr &req,
@@ -331,10 +339,16 @@ int main(int argc, char *argv[]) {
   if (key == "--action") {
     if (value == "run-server") {
       runServer(appConfig);
+#ifdef ENABLE_USER_SERVICE
     } else if (value == "create-tables") {
       createTables(appConfig.databaseConnectionString());
     } else if (value == "drop-tables") {
       dropTables();
+#else
+    } else if (value == "create-tables" || value == "drop-tables") {
+      cerr << "Database table actions require the user-service profile" << endl;
+      return 1;
+#endif
     } else {
       cerr << "Invalid action" << endl;
       return 1;
