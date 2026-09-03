@@ -66,22 +66,23 @@ else ()
     message(STATUS "use c++20")
 endif ()
 
-aux_source_directory(controllers CTL_SRC)
-aux_source_directory(filters FILTER_SRC)
-aux_source_directory(plugins PLUGIN_SRC)
-aux_source_directory(models MODEL_SRC)
-aux_source_directory(tables TABLE_SRC)
-aux_source_directory(helpers HELPER_SRC)
-aux_source_directory(schemas SCHEMA_SRC)
 aux_source_directory(observability OBSERVABILITY_SRC)
 aux_source_directory(config CONFIG_SRC)
-aux_source_directory(services SERVICES_SRC)
 aux_source_directory(pagination PAGINATION_SRC)
 aux_source_directory(cache CACHE_SRC)
-if (NOT ENABLE_USER_SERVICE)
-    list(FILTER CTL_SRC EXCLUDE REGEX ".*/(AuthController|RoleController|UserController)\\.cc$")
-    list(FILTER FILTER_SRC EXCLUDE REGEX ".*/AuthFilter\\.cc$")
-    list(FILTER SERVICES_SRC EXCLUDE REGEX ".*/(RoleService|UserService)\\.cc$")
+set(OPTIONAL_SERVICE_SRC)
+if (ENABLE_USER_SERVICE)
+    aux_source_directory(controllers CTL_SRC)
+    aux_source_directory(filters FILTER_SRC)
+    aux_source_directory(plugins PLUGIN_SRC)
+    aux_source_directory(models MODEL_SRC)
+    aux_source_directory(tables TABLE_SRC)
+    aux_source_directory(helpers HELPER_SRC)
+    aux_source_directory(schemas SCHEMA_SRC)
+    aux_source_directory(services SERVICES_SRC)
+    list(APPEND OPTIONAL_SERVICE_SRC
+         ${CTL_SRC} ${FILTER_SRC} ${PLUGIN_SRC} ${MODEL_SRC} ${TABLE_SRC}
+         ${HELPER_SRC} ${SCHEMA_SRC} ${SERVICES_SRC})
 endif ()
 drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
                     ${CMAKE_CURRENT_BINARY_DIR})
@@ -99,18 +100,11 @@ target_include_directories(${PROJECT_NAME}
 target_sources(${PROJECT_NAME}
                PRIVATE
                ${SRC_DIR}
-               ${CTL_SRC}
-               ${FILTER_SRC}
-               ${PLUGIN_SRC}
-               ${MODEL_SRC}
-               ${TABLE_SRC}
-               ${HELPER_SRC}
-               ${SCHEMA_SRC}
                ${OBSERVABILITY_SRC}
                ${CONFIG_SRC}
-               ${SERVICES_SRC}
                ${PAGINATION_SRC}
-               ${CACHE_SRC})
+               ${CACHE_SRC}
+               ${OPTIONAL_SERVICE_SRC})
 if (ENABLE_USER_SERVICE)
     target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_USER_SERVICE=1)
 endif ()
