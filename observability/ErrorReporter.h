@@ -2,6 +2,7 @@
 
 #include <exception>
 #include <functional>
+#include <drogon/HttpRequest.h>
 #include <map>
 #include <memory>
 #include <string>
@@ -46,5 +47,8 @@ void configureErrorReporter(const std::string& provider,
                             const ErrorContext& settings = {});
 void captureException(const std::exception& error,
                       const std::string& requestId = {},
+                      const ErrorContext& context = {}) noexcept;
+void captureException(const std::exception& error,
+                      const drogon::HttpRequestPtr& request,
                       const ErrorContext& context = {}) noexcept;
 }  // namespace observability

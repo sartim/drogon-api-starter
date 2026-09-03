@@ -1,4 +1,5 @@
 #include "ErrorReporter.h"
+#include "Observability.h"
 
 #include <drogon/drogon.h>
 #include <drogon/HttpClient.h>
@@ -283,6 +284,25 @@ void captureException(const std::exception& error, const std::string& requestId,
     errorReporter().captureException(error, requestId, context);
   } catch (...) {
     // Observability must never change application control flow.
+  }
+}
+
+void captureException(const std::exception& error,
+                      const drogon::HttpRequestPtr& request,
+                      const ErrorContext& context) noexcept {
+  try {
+    if (!request) {
+      captureException(error, std::string{}, context);
+      return;
+    }
+    ErrorContext requestContext{{"http.method", request->methodString()},
+                                {"http.path", request->path()},
+                                {"traceparent", traceparent(request)}};
+    requestContext.emplace("request.id", requestId(request));
+    for (const auto& [key, value] : context) requestContext[key] = value;
+    captureException(error, requestId(request), requestContext);
+  } catch (...) {
+    // Context enrichment is best effort and must never affect application flow.
   }
 }
 }  // namespace observability

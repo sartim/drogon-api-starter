@@ -50,8 +50,9 @@ is available when a developer wants only the platform foundation.
       asynchronous and fail open.
 - [x] Validate OTLP and Sentry payload delivery against a local mock collector
       in hosted CI without requiring vendor credentials.
-- [ ] Propagate request ID, trace ID, route, status, version, and bounded
-      contextual fields while keeping reporting asynchronous and fail-open.
+- [x] Propagate request ID, trace ID, method, path, and bounded contextual
+      fields through the request-aware capture API while keeping reporting
+      asynchronous and fail-open.
 - [x] Keep migrations as an explicit deployment job, never run them from every
       application replica.
 - [x] Add graceful shutdown, connection-pool tuning, timeouts, and rate limits.
