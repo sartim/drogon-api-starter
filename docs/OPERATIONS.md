@@ -62,7 +62,10 @@ compatible when rolling deployments may run old and new binaries together.
   It also exposes `observability_events_queued_total`,
   `observability_events_dropped_total`, `observability_batches_sent_total`,
   and `observability_batch_events_total` for exporter queue pressure and
-  delivery monitoring.
+  delivery monitoring. `observability_retries_total`,
+  `observability_failures_total`, and `observability_circuit_open_total` show
+  retry pressure, exhausted deliveries, and batches rejected while the circuit
+  breaker is open.
 
 If `/health` fails, inspect process logs and restart the failed instance. If
 `/health` passes but `/ready` fails, check database DNS, credentials, pool

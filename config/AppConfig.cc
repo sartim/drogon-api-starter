@@ -141,6 +141,17 @@ AppConfig AppConfig::fromValues(const std::map<std::string, std::string>& values
       seconds(values, "OBSERVABILITY_BATCH_DELAY_SECONDS", 0.1);
   config.observabilityMaxQueueSize =
       number(values, "OBSERVABILITY_MAX_QUEUE_SIZE", 1024);
+  config.observabilityRetryMaxAttempts =
+      number(values, "OBSERVABILITY_RETRY_MAX_ATTEMPTS", 3);
+  if (config.observabilityRetryMaxAttempts > 10) {
+    throw std::runtime_error("Invalid numeric configuration: OBSERVABILITY_RETRY_MAX_ATTEMPTS");
+  }
+  config.observabilityRetryBaseDelaySeconds =
+      seconds(values, "OBSERVABILITY_RETRY_BASE_DELAY_SECONDS", 0.1);
+  config.observabilityCircuitFailureThreshold =
+      number(values, "OBSERVABILITY_CIRCUIT_FAILURE_THRESHOLD", 5);
+  config.observabilityCircuitOpenSeconds =
+      seconds(values, "OBSERVABILITY_CIRCUIT_OPEN_SECONDS", 30.0);
   config.httpHost = values.count("HTTP_HOST") ? values.at("HTTP_HOST") : "0.0.0.0";
   config.httpPort = number(values, "HTTP_PORT", 8000);
   config.redisEnabled = flag(values, "REDIS_ENABLED", false);
@@ -176,6 +187,10 @@ AppConfig AppConfig::load(const std::filesystem::path& envFile) {
                           "OBSERVABILITY_TIMEOUT_SECONDS", "OBSERVABILITY_BATCH_SIZE",
                           "OBSERVABILITY_BATCH_DELAY_SECONDS", "HTTP_HOST",
                           "OBSERVABILITY_MAX_QUEUE_SIZE",
+                          "OBSERVABILITY_RETRY_MAX_ATTEMPTS",
+                          "OBSERVABILITY_RETRY_BASE_DELAY_SECONDS",
+                          "OBSERVABILITY_CIRCUIT_FAILURE_THRESHOLD",
+                          "OBSERVABILITY_CIRCUIT_OPEN_SECONDS",
                           "HTTP_PORT", "HTTP_IDLE_CONNECTION_TIMEOUT_SECONDS",
                           "RATE_LIMIT_REQUESTS", "RATE_LIMIT_WINDOW_SECONDS",
                           "DB_CONNECTION_POOL_SIZE", "DB_QUERY_TIMEOUT_SECONDS",

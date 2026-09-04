@@ -24,6 +24,10 @@ struct AppConfig {
   int observabilityBatchSize{10};
   double observabilityBatchDelaySeconds{0.1};
   int observabilityMaxQueueSize{1024};
+  int observabilityRetryMaxAttempts{3};
+  double observabilityRetryBaseDelaySeconds{0.1};
+  int observabilityCircuitFailureThreshold{5};
+  double observabilityCircuitOpenSeconds{30.0};
   std::string httpHost{"0.0.0.0"};
   int httpPort{8000};
   bool redisEnabled{false};

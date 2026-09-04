@@ -17,13 +17,15 @@
 namespace {
 class ReceivedEvent {
 public:
-  void record(const std::string& body) {
+  int record(const std::string& body) {
+    int requestCount;
     {
       std::lock_guard lock(mutex_);
       body_ = body;
-      ++requests_;
+      requestCount = ++requests_;
     }
     condition_.notify_one();
+    return requestCount;
   }
 
   bool waitForRequests(const int expected) {
@@ -77,6 +79,7 @@ int main() {
   }
   ReceivedEvent otlpEvent;
   ReceivedEvent sentryEvent;
+  ReceivedEvent flakyEvent;
 
   drogon::app().registerHandler(
       "/mock/otlp",
@@ -84,6 +87,15 @@ int main() {
                    drogon::AdviceCallback&& callback) {
         otlpEvent.record(std::string(request->getBody()));
         callback(drogon::HttpResponse::newHttpResponse());
+      });
+  drogon::app().registerHandler(
+      "/mock/flaky",
+      [&flakyEvent](const drogon::HttpRequestPtr& request,
+                    drogon::AdviceCallback&& callback) {
+        const auto requestCount = flakyEvent.record(std::string(request->getBody()));
+        auto response = drogon::HttpResponse::newHttpResponse();
+        if (requestCount < 3) response->setStatusCode(drogon::k500InternalServerError);
+        callback(response);
       });
   drogon::app().registerHandler(
       "/api/42/envelope/",
@@ -109,6 +121,21 @@ int main() {
       otlpEvent.body().find("otlp-request") == std::string::npos ||
       otlpEvent.body().find("otlp-request-2") == std::string::npos) {
     std::cerr << "OTLP mock payload validation failed\n";
+    drogon::app().quit();
+    server.join();
+    return 1;
+  }
+
+  const observability::ErrorContext retrying{{"batch_size", "1"},
+                                             {"retry_max_attempts", "3"},
+                                             {"retry_base_delay_seconds", "0.01"},
+                                             {"circuit_failure_threshold", "5"}};
+  observability::configureErrorReporter(
+      "otlp", "http://127.0.0.1:" + std::to_string(port) + "/mock/flaky",
+      retrying);
+  observability::captureException(error, "retry-request");
+  if (!flakyEvent.waitForRequests(3)) {
+    std::cerr << "OTLP retry policy did not retry failed delivery\n";
     drogon::app().quit();
     server.join();
     return 1;

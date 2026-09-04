@@ -229,7 +229,11 @@ void runServer(const config::AppConfig &appConfig) {
                            appConfig.observabilityTimeoutSeconds,
                            appConfig.observabilityBatchSize,
                            appConfig.observabilityBatchDelaySeconds,
-                           appConfig.observabilityMaxQueueSize);
+                           appConfig.observabilityMaxQueueSize,
+                           appConfig.observabilityRetryMaxAttempts,
+                           appConfig.observabilityRetryBaseDelaySeconds,
+                           appConfig.observabilityCircuitFailureThreshold,
+                           appConfig.observabilityCircuitOpenSeconds);
 
   app().registerPreRoutingAdvice([](const HttpRequestPtr &request) {
     const auto id = observability::requestId(request);

@@ -61,6 +61,12 @@ int main() {
       observabilityMetrics.find("observability_events_dropped_total") ==
           std::string::npos ||
       observabilityMetrics.find("observability_batches_sent_total") ==
+          std::string::npos ||
+      observabilityMetrics.find("observability_retries_total") ==
+          std::string::npos ||
+      observabilityMetrics.find("observability_failures_total") ==
+          std::string::npos ||
+      observabilityMetrics.find("observability_circuit_open_total") ==
           std::string::npos) {
     std::cerr << "observability queue metrics are missing\n";
     return 1;
