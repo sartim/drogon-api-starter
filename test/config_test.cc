@@ -20,6 +20,10 @@ int main() {
       {"OBSERVABILITY_BATCH_SIZE", "20"},
       {"OBSERVABILITY_BATCH_DELAY_SECONDS", "0.25"},
       {"OBSERVABILITY_MAX_QUEUE_SIZE", "200"},
+      {"OBSERVABILITY_RETRY_MAX_ATTEMPTS", "4"},
+      {"OBSERVABILITY_RETRY_BASE_DELAY_SECONDS", "0.2"},
+      {"OBSERVABILITY_CIRCUIT_FAILURE_THRESHOLD", "7"},
+      {"OBSERVABILITY_CIRCUIT_OPEN_SECONDS", "45"},
       {"HTTP_HOST", "127.0.0.1"},
       {"HTTP_PORT", "8080"},
       {"HTTP_IDLE_CONNECTION_TIMEOUT_SECONDS", "45"},
@@ -66,7 +70,11 @@ int main() {
       config.observabilityTimeoutSeconds != 2.0 ||
       config.observabilityBatchSize != 20 ||
       config.observabilityBatchDelaySeconds != 0.25 ||
-      config.observabilityMaxQueueSize != 200) {
+      config.observabilityMaxQueueSize != 200 ||
+      config.observabilityRetryMaxAttempts != 4 ||
+      config.observabilityRetryBaseDelaySeconds != 0.2 ||
+      config.observabilityCircuitFailureThreshold != 7 ||
+      config.observabilityCircuitOpenSeconds != 45.0) {
     std::cerr << "observability batching configuration was not parsed correctly\n";
     return 1;
   }

@@ -57,6 +57,8 @@ is available when a developer wants only the platform foundation.
       flush delay for OTLP and Sentry delivery.
 - [x] Add queue-pressure metrics and a bounded SIGTERM/SIGINT flush window for
       graceful observability shutdown.
+- [x] Add bounded exponential retries and a cooldown circuit breaker so an
+      unavailable telemetry destination cannot affect API availability.
 - [x] Keep migrations as an explicit deployment job, never run them from every
       application replica.
 - [x] Add graceful shutdown, connection-pool tuning, timeouts, and rate limits.

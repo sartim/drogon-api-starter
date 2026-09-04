@@ -315,6 +315,15 @@ dropped when the queue is full. SIGTERM and SIGINT trigger a bounded flush
 window before the Drogon event loop exits. `OBSERVABILITY_MAX_QUEUE_SIZE`
 controls the queue-pressure limit.
 
+Delivery is bounded as well. `OBSERVABILITY_RETRY_MAX_ATTEMPTS` controls the
+total attempts per batch, with exponential backoff starting at
+`OBSERVABILITY_RETRY_BASE_DELAY_SECONDS`. After
+`OBSERVABILITY_CIRCUIT_FAILURE_THRESHOLD` failed batches, delivery pauses for
+`OBSERVABILITY_CIRCUIT_OPEN_SECONDS` and then permits one recovery probe.
+Telemetry remains fail-open: failed or rejected events are discarded so an
+unavailable destination cannot affect API availability. Retry, failure, and
+circuit-open counters are exposed through `/metrics`.
+
 Keep provider credentials in the deployment secret store rather than committing
 them to `.env` or source control. Unsupported providers currently fall back to
 the no-op reporter and do not prevent startup; provider adapters will be added

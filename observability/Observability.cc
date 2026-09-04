@@ -96,6 +96,12 @@ void Metrics::recordObservabilityBatch(const std::uint64_t eventCount) {
   observabilityBatchEvents_ += eventCount;
 }
 
+void Metrics::recordObservabilityRetry() { ++observabilityRetries_; }
+
+void Metrics::recordObservabilityFailure() { ++observabilityFailures_; }
+
+void Metrics::recordObservabilityCircuitOpen() { ++observabilityCircuitOpen_; }
+
 std::string Metrics::prometheus() const {
   std::ostringstream output;
   output << "# HELP http_requests_total Total HTTP requests received.\n"
@@ -119,6 +125,15 @@ std::string Metrics::prometheus() const {
          << "# HELP observability_batch_events_total Events submitted in observability batches.\n"
          << "# TYPE observability_batch_events_total counter\n"
          << "observability_batch_events_total " << observabilityBatchEvents_.load() << "\n";
+  output << "# HELP observability_retries_total Exporter retry attempts.\n"
+         << "# TYPE observability_retries_total counter\n"
+         << "observability_retries_total " << observabilityRetries_.load() << "\n"
+         << "# HELP observability_failures_total Exporter batches that exhausted retries.\n"
+         << "# TYPE observability_failures_total counter\n"
+         << "observability_failures_total " << observabilityFailures_.load() << "\n"
+         << "# HELP observability_circuit_open_total Batches rejected while the exporter circuit was open.\n"
+         << "# TYPE observability_circuit_open_total counter\n"
+         << "observability_circuit_open_total " << observabilityCircuitOpen_.load() << "\n";
   return output.str();
 }
 
@@ -128,7 +143,11 @@ void configure(const std::string& configuredProvider,
                const double timeoutSeconds,
                const int batchSize,
                const double batchDelaySeconds,
-               const int maxQueueSize) {
+               const int maxQueueSize,
+               const int retryMaxAttempts,
+               const double retryBaseDelaySeconds,
+               const int circuitFailureThreshold,
+               const double circuitOpenSeconds) {
   const char* environmentDsn = std::getenv("SENTRY_DSN");
   const auto& sentryDsn = configuredDsn.empty() && environmentDsn != nullptr
                               ? std::string(environmentDsn)
@@ -145,6 +164,10 @@ void configure(const std::string& configuredProvider,
   settings["batch_size"] = std::to_string(batchSize);
   settings["batch_delay_seconds"] = std::to_string(batchDelaySeconds);
   settings["max_queue_size"] = std::to_string(maxQueueSize);
+  settings["retry_max_attempts"] = std::to_string(retryMaxAttempts);
+  settings["retry_base_delay_seconds"] = std::to_string(retryBaseDelaySeconds);
+  settings["circuit_failure_threshold"] = std::to_string(circuitFailureThreshold);
+  settings["circuit_open_seconds"] = std::to_string(circuitOpenSeconds);
   configureErrorReporter(provider, sentryDsn, settings);
 }
 

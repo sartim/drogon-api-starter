@@ -5,6 +5,7 @@
 #include <drogon/HttpClient.h>
 #include <json/json.h>
 #include <cstdlib>
+#include <chrono>
 #include <deque>
 #include <iterator>
 #include <mutex>
@@ -29,6 +30,95 @@ std::unordered_map<std::string, ErrorReporterFactory>& providerFactories() {
 std::mutex& providerMutex() {
   static std::mutex mutex;
   return mutex;
+}
+
+struct CircuitState {
+  explicit CircuitState(const std::size_t threshold,
+                        const double cooldownSeconds)
+      : failureThreshold(threshold), cooldown(cooldownSeconds) {}
+
+  bool allow() {
+    std::lock_guard lock(mutex);
+    const auto now = std::chrono::steady_clock::now();
+    if (openUntil > now) return false;
+    if (openUntil != std::chrono::steady_clock::time_point{} && probeInFlight)
+      return false;
+    if (openUntil != std::chrono::steady_clock::time_point{}) probeInFlight = true;
+    return true;
+  }
+
+  void success() {
+    std::lock_guard lock(mutex);
+    failures = 0;
+    openUntil = {};
+    probeInFlight = false;
+  }
+
+  void failure() {
+    std::lock_guard lock(mutex);
+    ++failures;
+    if (failures >= failureThreshold) {
+      openUntil = std::chrono::steady_clock::now() +
+                  std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+                      cooldown);
+      probeInFlight = false;
+    }
+  }
+
+  std::mutex mutex;
+  std::size_t failures{0};
+  std::size_t failureThreshold;
+  std::chrono::steady_clock::time_point openUntil{};
+  std::chrono::duration<double> cooldown;
+  bool probeInFlight{false};
+};
+
+struct Delivery {
+  drogon::HttpClientPtr client;
+  std::string path;
+  std::string contentType;
+  std::string body;
+  double timeout;
+  std::size_t maxAttempts;
+  double baseDelay;
+  std::size_t attempt{0};
+  std::shared_ptr<CircuitState> circuit;
+};
+
+void deliver(const std::shared_ptr<Delivery>& delivery) {
+  try {
+    ++delivery->attempt;
+    auto request = drogon::HttpRequest::newHttpRequest();
+    request->setMethod(drogon::Post);
+    request->setPath(delivery->path);
+    request->setContentTypeString(delivery->contentType);
+    request->setBody(delivery->body);
+    delivery->client->sendRequest(
+        request,
+        [delivery](drogon::ReqResult result,
+                   const drogon::HttpResponsePtr& response) {
+          const bool success = result == drogon::ReqResult::Ok && response &&
+                               response->statusCode() < 400;
+          if (success) {
+            delivery->circuit->success();
+            return;
+          }
+          if (delivery->attempt < delivery->maxAttempts) {
+            metrics().recordObservabilityRetry();
+            const auto exponent = delivery->attempt - 1;
+            const auto delay = delivery->baseDelay * (1ULL << exponent);
+            delivery->client->getLoop()->runAfter(
+                delay, [delivery] { deliver(delivery); });
+            return;
+          }
+          metrics().recordObservabilityFailure();
+          delivery->circuit->failure();
+        },
+        delivery->timeout);
+  } catch (...) {
+    metrics().recordObservabilityFailure();
+    delivery->circuit->failure();
+  }
 }
 
 class HttpErrorReporter : public ErrorReporter {
@@ -65,10 +155,30 @@ public:
         found != settings.end()) {
       maxQueueSize_ = std::stoul(found->second);
     }
-    if (batchSize_ == 0 || maxQueueSize_ == 0 || batchDelaySeconds_ <= 0.0) {
+    if (const auto found = settings.find("retry_max_attempts");
+        found != settings.end()) {
+      maxAttempts_ = std::stoul(found->second);
+    }
+    if (const auto found = settings.find("retry_base_delay_seconds");
+        found != settings.end()) {
+      retryBaseDelaySeconds_ = std::stod(found->second);
+    }
+    if (const auto found = settings.find("circuit_failure_threshold");
+        found != settings.end()) {
+      circuitFailureThreshold_ = std::stoul(found->second);
+    }
+    if (const auto found = settings.find("circuit_open_seconds");
+        found != settings.end()) {
+      circuitOpenSeconds_ = std::stod(found->second);
+    }
+    if (batchSize_ == 0 || maxQueueSize_ == 0 || batchDelaySeconds_ <= 0.0 ||
+        maxAttempts_ == 0 || maxAttempts_ > 10 || retryBaseDelaySeconds_ <= 0.0 ||
+        circuitFailureThreshold_ == 0 || circuitOpenSeconds_ <= 0.0) {
       throw std::invalid_argument("invalid observability batch settings");
     }
     client_ = drogon::HttpClient::newHttpClient(endpoint_);
+    circuit_ = std::make_shared<CircuitState>(circuitFailureThreshold_,
+                                               circuitOpenSeconds_);
   }
 
   ~HttpErrorReporter() override {
@@ -130,22 +240,21 @@ private:
       }
       if (events.empty()) return;
       metrics().recordObservabilityBatch(events.size());
-      auto request = drogon::HttpRequest::newHttpRequest();
-      request->setMethod(drogon::Post);
-      request->setPath(requestPath_);
-      request->setContentTypeString(contentType());
-      request->setBody(payload(events));
-      const auto timeout = timeoutSeconds_;
-      client_->sendRequest(
-          request,
-          [](drogon::ReqResult result,
-             const drogon::HttpResponsePtr& response) {
-            if (result != drogon::ReqResult::Ok || !response ||
-                response->statusCode() >= 400) {
-              LOG_DEBUG << "Observability batch delivery failed; continuing";
-            }
-          },
-          timeout);
+      if (!circuit_->allow()) {
+        metrics().recordObservabilityCircuitOpen();
+        metrics().recordObservabilityDropped();
+        return;
+      }
+      auto delivery = std::make_shared<Delivery>();
+      delivery->client = client_;
+      delivery->path = requestPath_;
+      delivery->contentType = contentType();
+      delivery->body = payload(events);
+      delivery->timeout = timeoutSeconds_;
+      delivery->maxAttempts = maxAttempts_;
+      delivery->baseDelay = retryBaseDelaySeconds_;
+      delivery->circuit = circuit_;
+      deliver(delivery);
     } catch (...) {
       // Reporting is best effort and must never affect application flow.
     }
@@ -159,6 +268,11 @@ private:
   std::size_t batchSize_{10};
   std::size_t maxQueueSize_{1024};
   double batchDelaySeconds_{0.1};
+  std::size_t maxAttempts_{3};
+  double retryBaseDelaySeconds_{0.1};
+  std::size_t circuitFailureThreshold_{5};
+  double circuitOpenSeconds_{30.0};
+  std::shared_ptr<CircuitState> circuit_;
   std::mutex queueMutex_;
   std::deque<CapturedException> queue_;
   trantor::TimerId timerId_{trantor::InvalidTimerId};
