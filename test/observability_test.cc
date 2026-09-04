@@ -52,6 +52,19 @@ int main() {
     std::cerr << "request metric is missing\n";
     return 1;
   }
+  observability::metrics().recordObservabilityQueued();
+  observability::metrics().recordObservabilityDropped();
+  observability::metrics().recordObservabilityBatch(2);
+  const auto observabilityMetrics = observability::metrics().prometheus();
+  if (observabilityMetrics.find("observability_events_queued_total") ==
+          std::string::npos ||
+      observabilityMetrics.find("observability_events_dropped_total") ==
+          std::string::npos ||
+      observabilityMetrics.find("observability_batches_sent_total") ==
+          std::string::npos) {
+    std::cerr << "observability queue metrics are missing\n";
+    return 1;
+  }
 
   observability::configureErrorReporter("none");
   if (observability::errorReporter().provider() != "none") {

@@ -23,6 +23,7 @@ public:
                                 const std::string& requestId,
                                 const ErrorContext& context) noexcept = 0;
   virtual std::string provider() const = 0;
+  virtual void flush() noexcept {}
 };
 
 class NoopErrorReporter final : public ErrorReporter {

@@ -311,7 +311,9 @@ request handling.
 Events are buffered briefly and delivered in bounded batches. Tune
 `OBSERVABILITY_BATCH_SIZE` and `OBSERVABILITY_BATCH_DELAY_SECONDS` for the
 collector and traffic profile; queued events are best effort and may be
-dropped during shutdown or when the queue is full.
+dropped when the queue is full. SIGTERM and SIGINT trigger a bounded flush
+window before the Drogon event loop exits. `OBSERVABILITY_MAX_QUEUE_SIZE`
+controls the queue-pressure limit.
 
 Keep provider credentials in the deployment secret store rather than committing
 them to `.env` or source control. Unsupported providers currently fall back to
