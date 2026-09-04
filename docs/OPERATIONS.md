@@ -59,6 +59,10 @@ compatible when rolling deployments may run old and new binaries together.
 - `/health` is liveness: it confirms the process and event loop respond.
 - `/ready` is readiness: it confirms the configured database is available.
 - `/metrics` exposes aggregate request, response, and 5xx counters.
+  It also exposes `observability_events_queued_total`,
+  `observability_events_dropped_total`, `observability_batches_sent_total`,
+  and `observability_batch_events_total` for exporter queue pressure and
+  delivery monitoring.
 
 If `/health` fails, inspect process logs and restart the failed instance. If
 `/health` passes but `/ready` fails, check database DNS, credentials, pool

@@ -87,6 +87,15 @@ void Metrics::recordResponse(const drogon::HttpRequestPtr& request,
   }
 }
 
+void Metrics::recordObservabilityQueued() { ++observabilityQueued_; }
+
+void Metrics::recordObservabilityDropped() { ++observabilityDropped_; }
+
+void Metrics::recordObservabilityBatch(const std::uint64_t eventCount) {
+  ++observabilityBatches_;
+  observabilityBatchEvents_ += eventCount;
+}
+
 std::string Metrics::prometheus() const {
   std::ostringstream output;
   output << "# HELP http_requests_total Total HTTP requests received.\n"
@@ -97,7 +106,19 @@ std::string Metrics::prometheus() const {
          << "http_responses_total " << responses_.load() << "\n"
          << "# HELP http_errors_total Total HTTP 5xx responses.\n"
          << "# TYPE http_errors_total counter\n"
-         << "http_errors_total " << errors_.load() << "\n";
+         << "http_errors_total " << errors_.load() << "\n"
+         << "# HELP observability_events_queued_total Events accepted by the observability queue.\n"
+         << "# TYPE observability_events_queued_total counter\n"
+         << "observability_events_queued_total " << observabilityQueued_.load() << "\n"
+         << "# HELP observability_events_dropped_total Events dropped due to queue pressure.\n"
+         << "# TYPE observability_events_dropped_total counter\n"
+         << "observability_events_dropped_total " << observabilityDropped_.load() << "\n"
+         << "# HELP observability_batches_sent_total Batches submitted to an observability provider.\n"
+         << "# TYPE observability_batches_sent_total counter\n"
+         << "observability_batches_sent_total " << observabilityBatches_.load() << "\n"
+         << "# HELP observability_batch_events_total Events submitted in observability batches.\n"
+         << "# TYPE observability_batch_events_total counter\n"
+         << "observability_batch_events_total " << observabilityBatchEvents_.load() << "\n";
   return output.str();
 }
 
@@ -106,7 +127,8 @@ void configure(const std::string& configuredProvider,
                const std::string& configuredOtlpEndpoint,
                const double timeoutSeconds,
                const int batchSize,
-               const double batchDelaySeconds) {
+               const double batchDelaySeconds,
+               const int maxQueueSize) {
   const char* environmentDsn = std::getenv("SENTRY_DSN");
   const auto& sentryDsn = configuredDsn.empty() && environmentDsn != nullptr
                               ? std::string(environmentDsn)
@@ -122,7 +144,15 @@ void configure(const std::string& configuredProvider,
   settings["timeout_seconds"] = std::to_string(timeoutSeconds);
   settings["batch_size"] = std::to_string(batchSize);
   settings["batch_delay_seconds"] = std::to_string(batchDelaySeconds);
+  settings["max_queue_size"] = std::to_string(maxQueueSize);
   configureErrorReporter(provider, sentryDsn, settings);
+}
+
+void flushErrorReporter() noexcept {
+  try {
+    errorReporter().flush();
+  } catch (...) {
+  }
 }
 
 } // namespace observability

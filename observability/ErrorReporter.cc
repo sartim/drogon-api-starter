@@ -61,7 +61,11 @@ public:
         found != settings.end()) {
       batchDelaySeconds_ = std::stod(found->second);
     }
-    if (batchSize_ == 0 || batchDelaySeconds_ <= 0.0) {
+    if (const auto found = settings.find("max_queue_size");
+        found != settings.end()) {
+      maxQueueSize_ = std::stoul(found->second);
+    }
+    if (batchSize_ == 0 || maxQueueSize_ == 0 || batchDelaySeconds_ <= 0.0) {
       throw std::invalid_argument("invalid observability batch settings");
     }
     client_ = drogon::HttpClient::newHttpClient(endpoint_);
@@ -80,20 +84,27 @@ public:
       bool flushImmediately = false;
       {
         std::lock_guard lock(queueMutex_);
+        if (queue_.size() >= maxQueueSize_) {
+          metrics().recordObservabilityDropped();
+          return;
+        }
         queue_.push_back({error.what(), requestId, context});
+        metrics().recordObservabilityQueued();
         flushImmediately = queue_.size() >= batchSize_;
         if (!flushImmediately && timerId_ == trantor::InvalidTimerId) {
           timerId_ = client_->getLoop()->runAfter(
-              batchDelaySeconds_, [this] { flush(); });
+              batchDelaySeconds_, [this] { flushQueue(); });
         }
       }
-      if (flushImmediately) flush();
+      if (flushImmediately) flushQueue();
     } catch (...) {
       // Reporting is best effort and must never affect application flow.
     }
   }
 
   std::string provider() const override { return provider_; }
+
+  void flush() noexcept override { flushQueue(); }
 
 protected:
   struct CapturedException {
@@ -107,7 +118,7 @@ protected:
   virtual const char* contentType() const { return "application/json"; }
 
 private:
-  void flush() noexcept {
+  void flushQueue() noexcept {
     try {
       std::vector<CapturedException> events;
       {
@@ -118,6 +129,7 @@ private:
         queue_.clear();
       }
       if (events.empty()) return;
+      metrics().recordObservabilityBatch(events.size());
       auto request = drogon::HttpRequest::newHttpRequest();
       request->setMethod(drogon::Post);
       request->setPath(requestPath_);
@@ -145,6 +157,7 @@ private:
   drogon::HttpClientPtr client_;
   double timeoutSeconds_{1.0};
   std::size_t batchSize_{10};
+  std::size_t maxQueueSize_{1024};
   double batchDelaySeconds_{0.1};
   std::mutex queueMutex_;
   std::deque<CapturedException> queue_;

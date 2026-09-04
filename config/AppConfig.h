@@ -23,6 +23,7 @@ struct AppConfig {
   double observabilityTimeoutSeconds{1.0};
   int observabilityBatchSize{10};
   double observabilityBatchDelaySeconds{0.1};
+  int observabilityMaxQueueSize{1024};
   std::string httpHost{"0.0.0.0"};
   int httpPort{8000};
   bool redisEnabled{false};

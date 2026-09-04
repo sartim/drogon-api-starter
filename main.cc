@@ -228,7 +228,8 @@ void runServer(const config::AppConfig &appConfig) {
                            appConfig.sentryDsn, appConfig.otlpEndpoint,
                            appConfig.observabilityTimeoutSeconds,
                            appConfig.observabilityBatchSize,
-                           appConfig.observabilityBatchDelaySeconds);
+                           appConfig.observabilityBatchDelaySeconds,
+                           appConfig.observabilityMaxQueueSize);
 
   app().registerPreRoutingAdvice([](const HttpRequestPtr &request) {
     const auto id = observability::requestId(request);
@@ -277,11 +278,13 @@ void runServer(const config::AppConfig &appConfig) {
       static_cast<size_t>(appConfig.idleConnectionTimeoutSeconds));
   drogon::app().setTermSignalHandler([] {
     LOG_INFO << "shutdown_requested signal=TERM";
-    drogon::app().quit();
+    observability::flushErrorReporter();
+    drogon::app().getLoop()->runAfter(0.25, [] { drogon::app().quit(); });
   });
   drogon::app().setIntSignalHandler([] {
     LOG_INFO << "shutdown_requested signal=INT";
-    drogon::app().quit();
+    observability::flushErrorReporter();
+    drogon::app().getLoop()->runAfter(0.25, [] { drogon::app().quit(); });
   });
   drogon::app().addListener(appConfig.httpHost, port);
 
