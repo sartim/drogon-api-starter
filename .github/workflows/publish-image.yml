@@ -29,10 +29,17 @@ jobs:
           fi
 
       - name: Build image
-        run: docker build --tag "${image_name}:${GITHUB_REF_NAME}" .
+        run: |
+          docker build \
+            --target build-env \
+            --build-arg ENABLE_USER_SERVICE=ON \
+            --tag "${image_name}:${GITHUB_REF_NAME}-builder" .
+          docker build \
+            --build-arg ENABLE_USER_SERVICE=ON \
+            --tag "${image_name}:${GITHUB_REF_NAME}" .
 
       - name: Run unit tests
-        run: docker run --rm "${image_name}:${GITHUB_REF_NAME}" ctest --test-dir build --output-on-failure
+        run: docker run --rm "${image_name}:${GITHUB_REF_NAME}-builder" ctest --test-dir build --output-on-failure
 
       - name: Start service
         run: docker run --detach --name user-service-release --publish 8000:8000 "${image_name}:${GITHUB_REF_NAME}"

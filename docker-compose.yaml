@@ -49,6 +49,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # Compose is the complete local stack, so use the batteries-included
+        # profile by default. Set ENABLE_USER_SERVICE=OFF for the platform-only
+        # image.
+        ENABLE_USER_SERVICE: ${ENABLE_USER_SERVICE:-ON}
     container_name: user_service
     ports:
       - "8000:8000"

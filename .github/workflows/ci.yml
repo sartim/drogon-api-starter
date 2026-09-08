@@ -32,6 +32,11 @@ jobs:
       - name: Build user-service runtime profile
         run: docker build --build-arg ENABLE_USER_SERVICE=ON --tag user-service:ci-user .
 
+      - name: Verify Compose defaults to user-service profile
+        run: |
+          test "$(docker compose config --format json | \
+            jq --raw-output '.services["web-server"].build.args.ENABLE_USER_SERVICE')" = "ON"
+
       - name: Start integration stack
         run: |
           docker tag user-service:ci-user user_service:latest
