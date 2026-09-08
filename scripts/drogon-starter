@@ -33,11 +33,15 @@ if [[ "$command" == "enable" ]]; then
     exit 1
   }
   source_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  namespace_name="${project_name//-/_}"
   temporary_root=$(mktemp -d)
   trap 'rm -rf "$temporary_root"' EXIT
   git -C "$source_root" archive --format=tar HEAD | tar -x -C "$temporary_root"
-  find "$temporary_root" -type f -not -path '*/.git/*' -exec sed -i.bak "s/@PROJECT_NAME@/$project_name/g" {} +
-  find "$temporary_root" -type f -not -path '*/.git/*' -exec sed -i.bak "s/drogon_user_service/$project_name/g" {} +
+  find "$temporary_root" -type f -not -path '*/.git/*' -exec sed -i.bak \
+    -e "s/drogon_model::drogon_user_service/drogon_model::$namespace_name/g" \
+    -e "s/namespace drogon_user_service/namespace $namespace_name/g" \
+    -e "s/@PROJECT_NAME@/$project_name/g" \
+    -e "s/drogon_user_service/$project_name/g" {} +
   find "$temporary_root" -name '*.bak' -delete
   cp -R "$temporary_root/." "$destination/"
   sed -i.bak 's/"profile":"minimal"/"profile":"user-service"/' \
@@ -95,6 +99,7 @@ mkdir -p "$destination"
 destination="$(cd "$destination" && pwd)"
 
 source_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+namespace_name="${project_name//-/_}"
 if [[ "$profile" == "minimal" ]]; then
   cp -R "$source_root/templates/minimal/." "$destination/"
 else
@@ -102,8 +107,11 @@ else
   # in this repository, so the starter and the reference service cannot drift.
   git -C "$source_root" archive --format=tar HEAD | tar -x -C "$destination"
 fi
-find "$destination" -type f -not -path '*/.git/*' -exec sed -i.bak "s/@PROJECT_NAME@/$project_name/g" {} +
-find "$destination" -type f -not -path '*/.git/*' -exec sed -i.bak "s/drogon_user_service/$project_name/g" {} +
+find "$destination" -type f -not -path '*/.git/*' -exec sed -i.bak \
+  -e "s/drogon_model::drogon_user_service/drogon_model::$namespace_name/g" \
+  -e "s/namespace drogon_user_service/namespace $namespace_name/g" \
+  -e "s/@PROJECT_NAME@/$project_name/g" \
+  -e "s/drogon_user_service/$project_name/g" {} +
 find "$destination" -name '*.bak' -delete
 
 # Keep extension points stable across profiles without making optional
