@@ -33,7 +33,7 @@ jobs:
         run: docker build --build-arg ENABLE_USER_SERVICE=ON --tag user-service:ci-user .
 
       - name: Verify Compose defaults to user-service profile
-        run: docker compose config | grep --fixed-strings --quiet 'ENABLE_USER_SERVICE: ON'
+        run: "docker compose config | grep --fixed-strings --quiet 'ENABLE_USER_SERVICE: ON'"
 
       - name: Start integration stack
         run: |
