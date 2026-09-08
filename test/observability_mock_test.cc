@@ -79,7 +79,7 @@ std::uint16_t availablePort() {
 
 std::uint64_t metricValue(const std::string& metrics,
                           const std::string& name) {
-  const auto marker = name + " ";
+  const auto marker = "\n" + name + " ";
   const auto position = metrics.find(marker);
   if (position == std::string::npos) return 0;
   return std::stoull(metrics.substr(position + marker.size()));
