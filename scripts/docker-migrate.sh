@@ -17,15 +17,17 @@ SQL
 for migration in /db/migrations/*.sql; do
   [ -f "$migration" ] || continue
   version="$(basename "$migration" .sql)"
-  applied="$(psql $psql_args --tuples-only --no-align \
-    --set ON_ERROR_STOP=1 \
-    --command "SELECT 1 FROM public.schema_migrations WHERE version = '$version'")"
-  if [ "$applied" = "1" ]; then
-    echo "Skipping $version"
-    continue
-  fi
   echo "Applying $version"
-  psql $psql_args --set ON_ERROR_STOP=1 --single-transaction \
-    --file "$migration" \
-    --command "INSERT INTO public.schema_migrations(version) VALUES ('$version')"
+  psql $psql_args --set ON_ERROR_STOP=1 --single-transaction <<SQL
+SELECT pg_advisory_xact_lock(hashtextextended('drogon-api-starter-schema-migrations', 0));
+SELECT EXISTS (
+    SELECT 1 FROM public.schema_migrations WHERE version = '$version'
+) AS applied \gset
+\if :applied
+\echo Skipping $version
+\else
+\i '$migration'
+INSERT INTO public.schema_migrations(version) VALUES ('$version');
+\endif
+SQL
 done

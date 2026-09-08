@@ -198,6 +198,10 @@ The image contains the user-service batteries profile. Use a release tag rather
 than `latest` for reproducible environments. The registry package may require
 `docker login ghcr.io` if its visibility is private.
 
+The release workflow also supports manual validation of an existing `vX.Y.Z`
+tag. Manual validation builds, tests, and health-checks the image without
+publishing unless the workflow's `publish` input is explicitly enabled.
+
 For native development, use `./scripts/setup_local.sh` on macOS or
 `./scripts/setup_ubuntu24.sh` on Ubuntu 24.04, then run:
 

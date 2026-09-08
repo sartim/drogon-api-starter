@@ -59,10 +59,19 @@ replicas receive traffic:
 ./scripts/seed.sh
 ```
 
+Each migration transaction takes a PostgreSQL advisory lock, so concurrent
+migration runners serialize safely. The lock is transaction-scoped and is
+released automatically on success or failure.
+
 Run migrations once per release using a role permitted to change schema. Never
 run them concurrently from every application replica. Take a database backup
 before destructive or irreversible migrations, and make migrations backward
 compatible when rolling deployments may run old and new binaries together.
+
+The versioned image workflow can be manually dispatched with an existing
+`vX.Y.Z` tag to validate the builder, runtime image, tests, and liveness check.
+It does not publish unless the `publish` input is enabled. A push of a valid
+semantic-version tag publishes automatically.
 
 ## Health diagnosis
 
