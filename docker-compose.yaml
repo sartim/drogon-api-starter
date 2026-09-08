@@ -73,7 +73,7 @@ services:
       - REDIS_PORT=${REDIS_PORT:-6379}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - REDIS_DB=${REDIS_DB:-0}
-    image: user_service:latest
+    image: ${SERVICE_IMAGE:-user_service:latest}
     command: /app/drogon_user_service --action=run-server
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8000/health"]

@@ -181,6 +181,23 @@ and validates both liveness and readiness. It builds locally by default. When
 `user_service:latest` is already available, use `COMPOSE_BUILD=false` to skip
 the build.
 
+### Use a published image
+
+Versioned user-service images are published to GitHub Container Registry when
+semantic release tags are created. To run the complete Compose stack without a
+local C++ or Docker build, pull an immutable release image and point Compose at
+it:
+
+```sh
+export SERVICE_IMAGE=ghcr.io/sartim/drogon-api-starter:v0.2.0
+docker pull "$SERVICE_IMAGE"
+COMPOSE_BUILD=false ./scripts/compose-start.sh
+```
+
+The image contains the user-service batteries profile. Use a release tag rather
+than `latest` for reproducible environments. The registry package may require
+`docker login ghcr.io` if its visibility is private.
+
 For native development, use `./scripts/setup_local.sh` on macOS or
 `./scripts/setup_ubuntu24.sh` on Ubuntu 24.04, then run:
 

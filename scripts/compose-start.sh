@@ -12,6 +12,8 @@ fi
 build_args=()
 if [[ "${COMPOSE_BUILD:-true}" == "true" ]]; then
   build_args+=(--build)
+elif [[ -n "${SERVICE_IMAGE:-}" ]]; then
+  docker pull "${SERVICE_IMAGE}"
 fi
 
 docker compose up "${build_args[@]}" --detach

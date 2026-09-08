@@ -9,6 +9,9 @@ is a developer or platform-team choice.
 - Build and test the intended profile with the hosted CI workflow.
 - Pin the image to a release tag such as `v0.2.0`; do not use `latest` in a
   production deployment.
+- Published images use the `ghcr.io/sartim/drogon-api-starter:vX.Y.Z` naming
+  convention and contain the user-service profile. Pull the exact tag before
+  starting a deployment.
 - Provide a long random `SECRET_KEY` and database credentials through the
   deployment secret store.
 - Set `DB_CONNECTION_POOL_SIZE` below the database connection budget after
@@ -38,6 +41,13 @@ docker compose down
 Use `COMPOSE_BUILD=false ./scripts/compose-start.sh` only when the expected
 image already exists locally. CI performs the Docker build and integration
 validation on Ubuntu; a local C++ toolchain is not required for hosted checks.
+To use a published image, set `SERVICE_IMAGE` to its immutable GHCR tag; the
+bootstrap script pulls that image before starting Compose:
+
+```sh
+SERVICE_IMAGE=ghcr.io/sartim/drogon-api-starter:v0.2.0 \
+  COMPOSE_BUILD=false ./scripts/compose-start.sh
+```
 
 ## Migrations and seed data
 

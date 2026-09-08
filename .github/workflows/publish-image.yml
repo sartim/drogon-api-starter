@@ -42,7 +42,15 @@ jobs:
         run: docker run --rm "${image_name}:${GITHUB_REF_NAME}-builder" ctest --test-dir build --output-on-failure
 
       - name: Start service
-        run: docker run --detach --name user-service-release --publish 8000:8000 "${image_name}:${GITHUB_REF_NAME}"
+        run: |
+          docker run --detach --name user-service-release --publish 8000:8000 \
+            --env SECRET_KEY=release-health-check-secret \
+            --env DB_HOST=127.0.0.1 \
+            --env DB_NAME=release-health-check \
+            --env DB_USER=release-health-check \
+            --env DB_PASSWORD= \
+            --env REDIS_ENABLED=false \
+            "${image_name}:${GITHUB_REF_NAME}"
 
       - name: Verify health endpoint
         run: |
