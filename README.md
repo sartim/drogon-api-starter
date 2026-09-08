@@ -170,6 +170,11 @@ To run a complete local stack with Redis:
 ./scripts/compose-start.sh
 ```
 
+Compose builds the user-service batteries profile by default, matching the
+PostgreSQL migrations, seed data, and integration API. To run only the Drogon
+platform foundation, use `ENABLE_USER_SERVICE=OFF`. To reuse an already
+published or locally tagged image without rebuilding, use `COMPOSE_BUILD=false`.
+
 The bootstrap command creates `.env` when needed, starts PostgreSQL and Redis,
 runs migrations, loads reference seed data, starts the user-service profile,
 and validates both liveness and readiness. It builds locally by default. When
