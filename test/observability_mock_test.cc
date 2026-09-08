@@ -1,8 +1,10 @@
 #include "observability/ErrorReporter.h"
+#include "observability/Observability.h"
 
 #include <drogon/drogon.h>
 
 #include <condition_variable>
+#include <chrono>
 #include <cstdint>
 #include <cerrno>
 #include <cstring>
@@ -39,6 +41,11 @@ public:
     return body_;
   }
 
+  int requests() const {
+    std::lock_guard lock(mutex_);
+    return requests_;
+  }
+
 private:
   mutable std::mutex mutex_;
   std::condition_variable condition_;
@@ -69,6 +76,14 @@ std::uint16_t availablePort() {
   close(socketHandle);
   return port;
 }
+
+std::uint64_t metricValue(const std::string& metrics,
+                          const std::string& name) {
+  const auto marker = "\n" + name + " ";
+  const auto position = metrics.find(marker);
+  if (position == std::string::npos) return 0;
+  return std::stoull(metrics.substr(position + marker.size()));
+}
 }  // namespace
 
 int main() {
@@ -80,6 +95,7 @@ int main() {
   ReceivedEvent otlpEvent;
   ReceivedEvent sentryEvent;
   ReceivedEvent flakyEvent;
+  ReceivedEvent circuitEvent;
 
   drogon::app().registerHandler(
       "/mock/otlp",
@@ -95,6 +111,15 @@ int main() {
         const auto requestCount = flakyEvent.record(std::string(request->getBody()));
         auto response = drogon::HttpResponse::newHttpResponse();
         if (requestCount < 3) response->setStatusCode(drogon::k500InternalServerError);
+        callback(response);
+      });
+  drogon::app().registerHandler(
+      "/mock/circuit",
+      [&circuitEvent](const drogon::HttpRequestPtr& request,
+                      drogon::AdviceCallback&& callback) {
+        circuitEvent.record(std::string(request->getBody()));
+        auto response = drogon::HttpResponse::newHttpResponse();
+        response->setStatusCode(drogon::k500InternalServerError);
         callback(response);
       });
   drogon::app().registerHandler(
@@ -136,6 +161,51 @@ int main() {
   observability::captureException(error, "retry-request");
   if (!flakyEvent.waitForRequests(3)) {
     std::cerr << "OTLP retry policy did not retry failed delivery\n";
+    drogon::app().quit();
+    server.join();
+    return 1;
+  }
+
+  const auto failuresBeforeCircuit = metricValue(
+      observability::metrics().prometheus(), "observability_failures_total");
+  const auto openBeforeCircuit = metricValue(
+      observability::metrics().prometheus(), "observability_circuit_open_total");
+  const observability::ErrorContext circuitSettings{
+      {"batch_size", "1"},
+      {"retry_max_attempts", "1"},
+      {"circuit_failure_threshold", "1"},
+      {"circuit_open_seconds", "0.2"}};
+  observability::configureErrorReporter(
+      "otlp", "http://127.0.0.1:" + std::to_string(port) + "/mock/circuit",
+      circuitSettings);
+  observability::captureException(error, "circuit-open-request");
+  if (!circuitEvent.waitForRequests(1)) {
+    std::cerr << "circuit breaker did not deliver the initial request\n";
+    drogon::app().quit();
+    server.join();
+    return 1;
+  }
+  for (int attempt = 0; attempt < 20; ++attempt) {
+    if (metricValue(observability::metrics().prometheus(),
+                    "observability_failures_total") > failuresBeforeCircuit) {
+      break;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  observability::captureException(error, "circuit-rejected-request");
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  if (circuitEvent.requests() != 1 ||
+      metricValue(observability::metrics().prometheus(),
+                  "observability_circuit_open_total") <= openBeforeCircuit) {
+    std::cerr << "open circuit did not reject a batch\n";
+    drogon::app().quit();
+    server.join();
+    return 1;
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(250));
+  observability::captureException(error, "circuit-recovery-probe");
+  if (!circuitEvent.waitForRequests(2)) {
+    std::cerr << "circuit breaker did not permit a recovery probe\n";
     drogon::app().quit();
     server.join();
     return 1;
