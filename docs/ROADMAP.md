@@ -44,6 +44,8 @@ is available when a developer wants only the platform foundation.
       configuration, migrations, seeding, Swagger, and health validation.
 - [x] Keep Docker Compose and versioned image workflows explicit about the
       selected minimal or user-service profile.
+- [x] Add manual release-image validation, immutable GHCR usage, and
+      transaction-scoped migration locking.
 
 ## P1 — Next: portable observability and deployment operations
 
