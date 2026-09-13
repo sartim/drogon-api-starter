@@ -111,6 +111,9 @@ cmake --build --preset user-service
 ctest --preset user-service
 ```
 
+The implementation plan and milestone status are tracked in
+[ROADMAP.md](ROADMAP.md).
+
 ## Requirements
 
 * [Drogon](https://github.com/drogonframework/drogon)
