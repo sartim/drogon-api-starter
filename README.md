@@ -456,9 +456,12 @@ CI runs the unit tests in the builder stage and uses the slim runtime stage
 only for service startup and endpoint checks.
 
 Docker source dependencies are pinned to reviewed tags and commits for
-reproducible builds. Upgrade them deliberately in `Dockerfile`, run the CI
-matrix, and review the resulting dependency changes. Dependabot continues to
-update base images, Docker dependencies, and GitHub Actions where supported.
+reproducible builds. The Docker and native setup paths currently use Drogon
+`v1.9.13`, jwt-cpp `v0.7.2`, and the reviewed Bcrypt.cpp commit. Upgrade them
+deliberately in `Dockerfile` and both setup scripts, run the hosted CI matrix,
+and review compatibility changes before merging. Dependabot updates base
+images, Docker dependencies, and GitHub Actions where supported; Git-cloned C++
+dependencies are maintained through these explicit pins.
 
 ## CI integration smoke test
 
