@@ -31,7 +31,7 @@ jobs:
 
     steps:
       - name: Check out release tag
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ env.release_tag }}
 
@@ -84,7 +84,7 @@ jobs:
 
       - name: Log in to GHCR
         if: ${{ github.event_name == 'push' || inputs.publish }}
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
