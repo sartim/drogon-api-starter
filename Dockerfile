@@ -5,10 +5,10 @@ WORKDIR /src
 
 # Keep source dependencies reproducible. Update these revisions deliberately,
 # validate the Docker/CI matrix, then record the change in the PR.
-ARG DROGON_TAG=v1.9.9
-ARG DROGON_COMMIT=38dd5fea31a7a2727c0a6f6b6b04252374796cab
-ARG JWT_CPP_TAG=v0.7.1
-ARG JWT_CPP_COMMIT=e71e0c2d584baff06925bbb3aad683f677e4d498
+ARG DROGON_TAG=v1.9.13
+ARG DROGON_COMMIT=4c5430757ea5451a7c38fbbef4b4bef7dbb47f2f
+ARG JWT_CPP_TAG=v0.7.2
+ARG JWT_CPP_COMMIT=b0ea29a58fc852a67d4e896d266880c2c63b0c4c
 ARG BCRYPT_CPP_COMMIT=0d18b6a99e8c57627910db4ef9a7706c009b12ad
 
 RUN apt-get update && \

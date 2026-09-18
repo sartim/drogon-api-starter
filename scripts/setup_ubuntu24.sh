@@ -4,6 +4,12 @@ set -euo pipefail
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$project_dir"
 
+DROGON_TAG=v1.9.13
+DROGON_COMMIT=4c5430757ea5451a7c38fbbef4b4bef7dbb47f2f
+JWT_CPP_TAG=v0.7.2
+JWT_CPP_COMMIT=b0ea29a58fc852a67d4e896d266880c2c63b0c4c
+BCRYPT_CPP_COMMIT=0d18b6a99e8c57627910db4ef9a7706c009b12ad
+
 if [[ "$(uname -s)" != "Linux" ]] || ! grep -q 'VERSION_ID="24.04"' /etc/os-release; then
   echo "This script requires Ubuntu 24.04." >&2
   exit 1
@@ -27,14 +33,27 @@ sudo -u postgres createdb -O "$(id -un)" drogon_user_service 2>/dev/null || true
 if [[ ! -d Bcrypt.cpp ]]; then
   git clone --depth 1 https://github.com/hilch/Bcrypt.cpp.git Bcrypt.cpp
 fi
+test "$(git -C Bcrypt.cpp rev-parse HEAD)" = "$BCRYPT_CPP_COMMIT" || {
+  echo "Bcrypt.cpp is not pinned to $BCRYPT_CPP_COMMIT; remove it and rerun setup." >&2
+  exit 1
+}
 
 if [[ ! -d jwt-cpp ]]; then
-  git clone --depth 1 https://github.com/Thalhammer/jwt-cpp.git jwt-cpp
+  git clone --depth 1 --branch "$JWT_CPP_TAG" https://github.com/Thalhammer/jwt-cpp.git jwt-cpp
 fi
+test "$(git -C jwt-cpp rev-parse HEAD)" = "$JWT_CPP_COMMIT" || {
+  echo "jwt-cpp is not pinned to $JWT_CPP_TAG; remove it and rerun setup." >&2
+  exit 1
+}
 
 if [[ ! -d drogon ]]; then
-  git clone --depth 1 --recurse-submodules https://github.com/drogonframework/drogon.git drogon
+  git clone --depth 1 --branch "$DROGON_TAG" --recurse-submodules \
+    https://github.com/drogonframework/drogon.git drogon
 fi
+test "$(git -C drogon rev-parse HEAD)" = "$DROGON_COMMIT" || {
+  echo "Drogon is not pinned to $DROGON_TAG; remove it and rerun setup." >&2
+  exit 1
+}
 
 local_prefix="$project_dir/.local"
 
