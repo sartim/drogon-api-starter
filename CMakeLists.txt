@@ -10,6 +10,9 @@ project(drogon_user_service VERSION ${SERVICE_VERSION} LANGUAGES CXX)
 option(ENABLE_USER_SERVICE
        "Build the user/RBAC service profile"
        OFF)
+option(ENABLE_GRPC
+       "Build the optional gRPC adapter and protobuf contract"
+       OFF)
 
 include(CTest)
 enable_testing()
@@ -83,6 +86,40 @@ if (ENABLE_USER_SERVICE)
     list(APPEND OPTIONAL_SERVICE_SRC
          ${CTL_SRC} ${FILTER_SRC} ${PLUGIN_SRC} ${MODEL_SRC} ${TABLE_SRC}
          ${HELPER_SRC} ${SCHEMA_SRC} ${SERVICES_SRC})
+endif ()
+
+if (ENABLE_GRPC)
+    find_package(Protobuf CONFIG REQUIRED)
+    find_package(gRPC CONFIG REQUIRED)
+
+    set(GRPC_PROTO_FILE "${CMAKE_CURRENT_SOURCE_DIR}/grpc/proto/health.proto")
+    set(GRPC_GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/grpc")
+    set(GRPC_GENERATED_SOURCES
+        "${GRPC_GENERATED_DIR}/health.pb.cc"
+        "${GRPC_GENERATED_DIR}/health.grpc.pb.cc")
+    set(GRPC_GENERATED_HEADERS
+        "${GRPC_GENERATED_DIR}/health.pb.h"
+        "${GRPC_GENERATED_DIR}/health.grpc.pb.h")
+
+    add_custom_command(
+        OUTPUT ${GRPC_GENERATED_SOURCES} ${GRPC_GENERATED_HEADERS}
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${GRPC_GENERATED_DIR}"
+        COMMAND $<TARGET_FILE:protobuf::protoc>
+                --proto_path="${CMAKE_CURRENT_SOURCE_DIR}/grpc/proto"
+                --cpp_out="${GRPC_GENERATED_DIR}"
+                --grpc_out="${GRPC_GENERATED_DIR}"
+                --plugin=protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>
+                "${GRPC_PROTO_FILE}"
+        DEPENDS ${GRPC_PROTO_FILE}
+        VERBATIM)
+
+    add_library(grpc_contract STATIC ${GRPC_GENERATED_SOURCES})
+    target_include_directories(grpc_contract PUBLIC "${GRPC_GENERATED_DIR}")
+    target_link_libraries(grpc_contract PUBLIC gRPC::grpc++ protobuf::libprotobuf)
+    target_sources(${PROJECT_NAME} PRIVATE grpc/GrpcServer.cc)
+    target_include_directories(${PROJECT_NAME} PRIVATE "${GRPC_GENERATED_DIR}")
+    target_link_libraries(${PROJECT_NAME} PRIVATE grpc_contract)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_GRPC=1)
 endif ()
 drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
                     ${CMAKE_CURRENT_BINARY_DIR})

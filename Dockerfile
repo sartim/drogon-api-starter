@@ -10,11 +10,15 @@ ARG DROGON_COMMIT=4c5430757ea5451a7c38fbbef4b4bef7dbb47f2f
 ARG JWT_CPP_TAG=v0.7.2
 ARG JWT_CPP_COMMIT=b0ea29a58fc852a67d4e896d266880c2c63b0c4c
 ARG BCRYPT_CPP_COMMIT=0d18b6a99e8c57627910db4ef9a7706c009b12ad
+ARG ENABLE_GRPC=OFF
 
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      cmake pkg-config curl libjsoncpp-dev uuid-dev libpqxx-dev libhiredis-dev \
-      libssl-dev zlib1g-dev libbz2-dev liblzma-dev libpq-dev && \
+    packages="cmake pkg-config curl libjsoncpp-dev uuid-dev libpqxx-dev libhiredis-dev \
+      libssl-dev zlib1g-dev libbz2-dev liblzma-dev libpq-dev" && \
+    if [ "${ENABLE_GRPC}" = "ON" ]; then \
+      packages="${packages} libgrpc++-dev protobuf-compiler protobuf-compiler-grpc"; \
+    fi && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ${packages} && \
     rm -rf /var/lib/apt/lists/*
 
 RUN git clone --depth 1 --branch ${DROGON_TAG} --recurse-submodules https://github.com/drogonframework/drogon.git /tmp/drogon && \
@@ -39,13 +43,14 @@ RUN git clone --depth 1 https://github.com/hilch/Bcrypt.cpp.git Bcrypt.cpp && \
 
 ARG ENABLE_USER_SERVICE=OFF
 RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
-      -DENABLE_USER_SERVICE=${ENABLE_USER_SERVICE} && \
+      -DENABLE_USER_SERVICE=${ENABLE_USER_SERVICE} \
+      -DENABLE_GRPC=${ENABLE_GRPC} && \
     cmake --build build --parallel && \
     ctest --test-dir build --output-on-failure
 
 # Always compile the complete batteries-included profile in CI so changes to
 # the optional service are validated even when the default image is minimal.
-RUN cmake --preset user-service && \
+RUN cmake --preset user-service -DENABLE_GRPC=${ENABLE_GRPC} && \
     cmake --build --preset user-service --parallel && \
     ctest --preset user-service
 
@@ -53,11 +58,15 @@ FROM debian:bookworm-slim AS runtime
 
 ENV TZ=UTC
 WORKDIR /app
+ARG ENABLE_GRPC=OFF
 
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      ca-certificates curl libbrotli1 libc-ares2 libgcc-s1 libjsoncpp25 \
-      libpq5 libpqxx-6.4 libhiredis0.14 libssl3 libstdc++6 libuuid1 zlib1g && \
+    packages="ca-certificates curl libbrotli1 libc-ares2 libgcc-s1 libjsoncpp25 \
+      libpq5 libpqxx-6.4 libhiredis0.14 libssl3 libstdc++6 libuuid1 zlib1g" && \
+    if [ "${ENABLE_GRPC}" = "ON" ]; then \
+      packages="${packages} libgrpc++1.51 libprotobuf32"; \
+    fi && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ${packages} && \
     rm -rf /var/lib/apt/lists/* && \
     useradd --system --create-home --home-dir /app --shell /usr/sbin/nologin appuser
 

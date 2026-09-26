@@ -86,8 +86,11 @@ is available when a developer wants only the platform foundation.
 
 ## P3 — Future: optional gRPC adapter
 
-- [ ] Add `ENABLE_GRPC=OFF` without adding gRPC dependencies to REST builds.
-- [ ] Define versioned protobuf contracts and generate C++ sources at build time.
+- [x] Add `ENABLE_GRPC=OFF` without adding gRPC dependencies to REST builds.
+- [x] Define a versioned protobuf health contract and generate C++ sources at
+      build time when gRPC is enabled.
+- [x] Implement a separate gRPC health adapter on a dedicated configurable port
+      with graceful shutdown.
 - [ ] Implement separate gRPC server/client adapters on a dedicated port.
 - [ ] Route REST and gRPC adapters through the same application services.
 - [ ] Share authentication, request IDs, tracing, metrics, deadlines, and
