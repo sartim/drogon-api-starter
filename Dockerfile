@@ -16,7 +16,7 @@ RUN apt-get update && \
     packages="cmake pkg-config curl libjsoncpp-dev uuid-dev libpqxx-dev libhiredis-dev \
       libssl-dev zlib1g-dev libbz2-dev liblzma-dev libpq-dev" && \
     if [ "${ENABLE_GRPC}" = "ON" ]; then \
-      packages="${packages} libgrpc++-dev protobuf-compiler protobuf-compiler-grpc"; \
+      packages="${packages} libgrpc++-dev libprotobuf-dev protobuf-compiler protobuf-compiler-grpc"; \
     fi && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ${packages} && \
     rm -rf /var/lib/apt/lists/*
