@@ -93,10 +93,19 @@ if (ENABLE_GRPC)
     # ProtobufConfig.cmake file. Use the module mode so the optional profile
     # works with distro packages as well as package-manager config packages.
     find_package(Protobuf REQUIRED)
-    # Debian's gRPC targets reference the c-ares imported target explicitly.
-    # Load its package metadata before importing gRPC to keep the link
-    # interface valid when using distro-provided gRPC.
-    find_package(c-ares CONFIG REQUIRED)
+    # Debian's gRPC CMake targets reference c-ares::cares, but the Debian
+    # c-ares development package does not ship a CMake config file. Prefer an
+    # upstream config when available and provide the imported target from the
+    # installed headers/library for distro packages otherwise.
+    find_package(c-ares CONFIG QUIET)
+    if (NOT TARGET c-ares::cares)
+        find_path(CARES_INCLUDE_DIR NAMES ares.h REQUIRED)
+        find_library(CARES_LIBRARY NAMES cares REQUIRED)
+        add_library(c-ares::cares UNKNOWN IMPORTED)
+        set_target_properties(c-ares::cares PROPERTIES
+            IMPORTED_LOCATION "${CARES_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${CARES_INCLUDE_DIR}")
+    endif ()
     find_package(gRPC CONFIG REQUIRED)
 
     set(GRPC_PROTO_FILE "${CMAKE_CURRENT_SOURCE_DIR}/grpc/proto/health.proto")
