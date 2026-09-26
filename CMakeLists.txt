@@ -89,7 +89,10 @@ if (ENABLE_USER_SERVICE)
 endif ()
 
 if (ENABLE_GRPC)
-    find_package(Protobuf CONFIG REQUIRED)
+    # Debian/Ubuntu ship Protobuf with CMake's module metadata rather than a
+    # ProtobufConfig.cmake file. Use the module mode so the optional profile
+    # works with distro packages as well as package-manager config packages.
+    find_package(Protobuf REQUIRED)
     find_package(gRPC CONFIG REQUIRED)
 
     set(GRPC_PROTO_FILE "${CMAKE_CURRENT_SOURCE_DIR}/grpc/proto/health.proto")
