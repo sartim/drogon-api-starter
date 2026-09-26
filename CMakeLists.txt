@@ -93,6 +93,10 @@ if (ENABLE_GRPC)
     # ProtobufConfig.cmake file. Use the module mode so the optional profile
     # works with distro packages as well as package-manager config packages.
     find_package(Protobuf REQUIRED)
+    # Debian's gRPC targets reference the c-ares imported target explicitly.
+    # Load its package metadata before importing gRPC to keep the link
+    # interface valid when using distro-provided gRPC.
+    find_package(c-ares CONFIG REQUIRED)
     find_package(gRPC CONFIG REQUIRED)
 
     set(GRPC_PROTO_FILE "${CMAKE_CURRENT_SOURCE_DIR}/grpc/proto/health.proto")
