@@ -99,12 +99,8 @@ if (ENABLE_GRPC)
     # installed headers/library for distro packages otherwise.
     find_package(c-ares CONFIG QUIET)
     if (NOT TARGET c-ares::cares)
-        find_path(CARES_INCLUDE_DIR NAMES ares.h REQUIRED)
-        find_library(CARES_LIBRARY NAMES cares REQUIRED)
-        add_library(c-ares::cares UNKNOWN IMPORTED)
-        set_target_properties(c-ares::cares PROPERTIES
-            IMPORTED_LOCATION "${CARES_LIBRARY}"
-            INTERFACE_INCLUDE_DIRECTORIES "${CARES_INCLUDE_DIR}")
+        list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+        find_package(c-ares MODULE REQUIRED)
     endif ()
     find_package(gRPC CONFIG REQUIRED)
 
