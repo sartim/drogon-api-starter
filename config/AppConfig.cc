@@ -154,6 +154,9 @@ AppConfig AppConfig::fromValues(const std::map<std::string, std::string>& values
       seconds(values, "OBSERVABILITY_CIRCUIT_OPEN_SECONDS", 30.0);
   config.httpHost = values.count("HTTP_HOST") ? values.at("HTTP_HOST") : "0.0.0.0";
   config.httpPort = number(values, "HTTP_PORT", 8000);
+  config.grpcEnabled = flag(values, "GRPC_ENABLED", false);
+  config.grpcHost = values.count("GRPC_HOST") ? values.at("GRPC_HOST") : "0.0.0.0";
+  config.grpcPort = number(values, "GRPC_PORT", 9000);
   config.redisEnabled = flag(values, "REDIS_ENABLED", false);
   config.redisHost = values.count("REDIS_HOST") ? values.at("REDIS_HOST") : "127.0.0.1";
   config.redisPort = number(values, "REDIS_PORT", 6379);
@@ -191,7 +194,8 @@ AppConfig AppConfig::load(const std::filesystem::path& envFile) {
                           "OBSERVABILITY_RETRY_BASE_DELAY_SECONDS",
                           "OBSERVABILITY_CIRCUIT_FAILURE_THRESHOLD",
                           "OBSERVABILITY_CIRCUIT_OPEN_SECONDS",
-                          "HTTP_PORT", "HTTP_IDLE_CONNECTION_TIMEOUT_SECONDS",
+                          "HTTP_PORT", "GRPC_ENABLED", "GRPC_HOST", "GRPC_PORT",
+                          "HTTP_IDLE_CONNECTION_TIMEOUT_SECONDS",
                           "RATE_LIMIT_REQUESTS", "RATE_LIMIT_WINDOW_SECONDS",
                           "DB_CONNECTION_POOL_SIZE", "DB_QUERY_TIMEOUT_SECONDS",
                           "REDIS_ENABLED", "REDIS_HOST", "REDIS_PORT",
