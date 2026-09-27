@@ -117,9 +117,9 @@ if (ENABLE_GRPC)
         OUTPUT ${GRPC_GENERATED_SOURCES} ${GRPC_GENERATED_HEADERS}
         COMMAND ${CMAKE_COMMAND} -E make_directory "${GRPC_GENERATED_DIR}"
         COMMAND $<TARGET_FILE:protobuf::protoc>
-                --proto_path="${CMAKE_CURRENT_SOURCE_DIR}/grpc/proto"
-                --cpp_out="${GRPC_GENERATED_DIR}"
-                --grpc_out="${GRPC_GENERATED_DIR}"
+                "--proto_path=${CMAKE_CURRENT_SOURCE_DIR}/grpc/proto"
+                "--cpp_out=${GRPC_GENERATED_DIR}"
+                "--grpc_out=${GRPC_GENERATED_DIR}"
                 --plugin=protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>
                 "${GRPC_PROTO_FILE}"
         DEPENDS ${GRPC_PROTO_FILE}
