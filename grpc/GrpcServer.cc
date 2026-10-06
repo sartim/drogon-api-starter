@@ -26,6 +26,7 @@ class GrpcServer::HealthService final : public drogon::api::v1::Health::Service 
   }
 };
 
+#ifdef ENABLE_USER_SERVICE
 class GrpcServer::UserDirectoryService final
     : public drogon::api::v1::UserDirectory::Service {
  public:
