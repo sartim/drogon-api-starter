@@ -95,6 +95,9 @@ is available when a developer wants only the platform foundation.
       user-service profile, reusing the REST `UserService` and JWT verifier.
 - [x] Exercise the optional RPC in hosted CI against the disposable database
       fixture, including authenticated success and unauthenticated rejection.
+- [x] Require TLS when gRPC is enabled unless the developer explicitly opts in
+      to insecure local development; validate the TLS connection in hosted CI.
+- [x] Bound gRPC send and receive message sizes (4 MiB default, 64 MiB maximum).
 - [ ] Implement reusable client adapters and map the remaining user/RBAC
       operations through shared application services.
 - [ ] Share request IDs, tracing, metrics, deadlines, and cancellation rules
@@ -102,9 +105,9 @@ is available when a developer wants only the platform foundation.
       before increasing gRPC concurrency.
 - [x] Add hosted gRPC integration checks for user lookup, authentication
       rejection, and missing-user status mapping.
-- [ ] Add TLS, message limits, and deployment configuration only when the
-      optional adapter is enabled; until then, document private-network-only
-      use of its insecure transport.
+- [ ] Add production deployment configuration and client TLS policy only when
+      the optional adapter is enabled; developers choose their deployment
+      platform and certificate management strategy.
 
 ## Engineering principles
 

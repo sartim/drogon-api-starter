@@ -86,6 +86,83 @@ int main() {
     return 1;
   }
 
+  if (config.grpcEnabled || config.grpcAllowInsecure ||
+      config.grpcMaxReceiveMessageBytes != 4 * 1024 * 1024 ||
+      config.grpcMaxSendMessageBytes != 4 * 1024 * 1024) {
+    std::cerr << "optional gRPC settings have incorrect defaults\n";
+    return 1;
+  }
+
+  auto grpcValues = values;
+  grpcValues["GRPC_ENABLED"] = "true";
+  grpcValues["GRPC_TLS_CERT_FILE"] = "/run/tls/server.crt";
+  grpcValues["GRPC_TLS_KEY_FILE"] = "/run/tls/server.key";
+  grpcValues["GRPC_MAX_RECEIVE_MESSAGE_BYTES"] = "2097152";
+  grpcValues["GRPC_MAX_SEND_MESSAGE_BYTES"] = "1048576";
+  const auto secureGrpcConfig = config::AppConfig::fromValues(grpcValues);
+  if (!secureGrpcConfig.grpcEnabled || secureGrpcConfig.grpcAllowInsecure ||
+      secureGrpcConfig.grpcTlsCertFile != "/run/tls/server.crt" ||
+      secureGrpcConfig.grpcTlsKeyFile != "/run/tls/server.key" ||
+      secureGrpcConfig.grpcMaxReceiveMessageBytes != 2097152 ||
+      secureGrpcConfig.grpcMaxSendMessageBytes != 1048576) {
+    std::cerr << "secure gRPC configuration was not parsed correctly\n";
+    return 1;
+  }
+
+  auto missingGrpcTls = values;
+  missingGrpcTls["GRPC_ENABLED"] = "true";
+  try {
+    (void)config::AppConfig::fromValues(missingGrpcTls);
+    std::cerr << "gRPC without TLS or explicit insecure mode was accepted\n";
+    return 1;
+  } catch (const std::runtime_error&) {
+  }
+
+  auto incompleteGrpcTls = values;
+  incompleteGrpcTls["GRPC_ENABLED"] = "true";
+  incompleteGrpcTls["GRPC_TLS_CERT_FILE"] = "/run/tls/server.crt";
+  try {
+    (void)config::AppConfig::fromValues(incompleteGrpcTls);
+    std::cerr << "gRPC with only one TLS file was accepted\n";
+    return 1;
+  } catch (const std::runtime_error&) {
+  }
+
+  auto insecureGrpc = values;
+  insecureGrpc["GRPC_ENABLED"] = "true";
+  insecureGrpc["GRPC_ALLOW_INSECURE"] = "true";
+  if (!config::AppConfig::fromValues(insecureGrpc).grpcAllowInsecure) {
+    std::cerr << "explicit insecure development mode was not accepted\n";
+    return 1;
+  }
+
+  auto oversizedGrpcMessage = grpcValues;
+  oversizedGrpcMessage["GRPC_MAX_SEND_MESSAGE_BYTES"] = "67108865";
+  try {
+    (void)config::AppConfig::fromValues(oversizedGrpcMessage);
+    std::cerr << "oversized gRPC message limit was accepted\n";
+    return 1;
+  } catch (const std::runtime_error&) {
+  }
+
+  auto malformedGrpcMessage = grpcValues;
+  malformedGrpcMessage["GRPC_MAX_RECEIVE_MESSAGE_BYTES"] = "1024bytes";
+  try {
+    (void)config::AppConfig::fromValues(malformedGrpcMessage);
+    std::cerr << "malformed gRPC message limit was accepted\n";
+    return 1;
+  } catch (const std::runtime_error&) {
+  }
+
+  auto conflictingGrpcTransport = grpcValues;
+  conflictingGrpcTransport["GRPC_ALLOW_INSECURE"] = "true";
+  try {
+    (void)config::AppConfig::fromValues(conflictingGrpcTransport);
+    std::cerr << "conflicting gRPC transport modes were accepted\n";
+    return 1;
+  } catch (const std::runtime_error&) {
+  }
+
   auto invalid = values;
   invalid["HTTP_PORT"] = "not-a-port";
   try {

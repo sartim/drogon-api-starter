@@ -12,13 +12,21 @@ namespace grpc_adapter {
 
 class GrpcServer {
  public:
+  struct StartOptions {
+    std::string tlsCertFile;
+    std::string tlsKeyFile;
+    bool allowInsecure{false};
+    int maxReceiveMessageBytes{4 * 1024 * 1024};
+    int maxSendMessageBytes{4 * 1024 * 1024};
+  };
+
   explicit GrpcServer(std::string secretKey = {});
   ~GrpcServer();
 
   GrpcServer(const GrpcServer&) = delete;
   GrpcServer& operator=(const GrpcServer&) = delete;
 
-  bool start(const std::string& address);
+  bool start(const std::string& address, const StartOptions& options);
   void stop();
 
  private:

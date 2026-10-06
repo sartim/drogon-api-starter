@@ -45,8 +45,10 @@ request_status 404 "${base_url}/api/v1/user/00000000-0000-0000-0000-000000000000
 
 if [[ -n "${GRPC_CLIENT_IMAGE:-}" ]]; then
   docker run --rm --network container:user_service \
+    --volume "${GRPC_TLS_DIR:-${PWD}/.ci/tls}:/run/grpc-tls:ro" \
     "$GRPC_CLIENT_IMAGE" /src/build/user-service/test/grpc_integration_client \
-    "127.0.0.1:${GRPC_PORT:-9000}" "$created_id" "$token" "$created_email"
+    "127.0.0.1:${GRPC_PORT:-9000}" "$created_id" "$token" "$created_email" \
+    /run/grpc-tls/server.crt
 fi
 
 request_status 200 "${base_url}/api/v1/user?page=1&page_size=10" \

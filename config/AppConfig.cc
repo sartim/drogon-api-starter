@@ -61,6 +61,23 @@ int nonNegativeNumber(const std::map<std::string, std::string>& values,
   }
 }
 
+int grpcMessageLimit(const std::map<std::string, std::string>& values,
+                     const std::string& key, int fallback) {
+  const auto value = values.find(key);
+  if (value == values.end() || value->second.empty()) return fallback;
+  try {
+    std::size_t parsedLength = 0;
+    const auto parsed = std::stoi(value->second, &parsedLength);
+    if (parsedLength != value->second.size() || parsed < 1024 ||
+        parsed > 64 * 1024 * 1024) {
+      throw std::out_of_range("gRPC message size");
+    }
+    return parsed;
+  } catch (const std::exception&) {
+    throw std::runtime_error("Invalid gRPC message size configuration: " + key);
+  }
+}
+
 bool flag(const std::map<std::string, std::string>& values,
           const std::string& key, bool fallback) {
   const auto value = values.find(key);
@@ -157,6 +174,32 @@ AppConfig AppConfig::fromValues(const std::map<std::string, std::string>& values
   config.grpcEnabled = flag(values, "GRPC_ENABLED", false);
   config.grpcHost = values.count("GRPC_HOST") ? values.at("GRPC_HOST") : "0.0.0.0";
   config.grpcPort = number(values, "GRPC_PORT", 9000);
+  config.grpcTlsCertFile = values.count("GRPC_TLS_CERT_FILE")
+                               ? values.at("GRPC_TLS_CERT_FILE")
+                               : "";
+  config.grpcTlsKeyFile = values.count("GRPC_TLS_KEY_FILE")
+                              ? values.at("GRPC_TLS_KEY_FILE")
+                              : "";
+  config.grpcAllowInsecure = flag(values, "GRPC_ALLOW_INSECURE", false);
+  config.grpcMaxReceiveMessageBytes = grpcMessageLimit(
+      values, "GRPC_MAX_RECEIVE_MESSAGE_BYTES", 4 * 1024 * 1024);
+  config.grpcMaxSendMessageBytes = grpcMessageLimit(
+      values, "GRPC_MAX_SEND_MESSAGE_BYTES", 4 * 1024 * 1024);
+  if (config.grpcTlsCertFile.empty() != config.grpcTlsKeyFile.empty()) {
+    throw std::runtime_error(
+        "GRPC_TLS_CERT_FILE and GRPC_TLS_KEY_FILE must be set together");
+  }
+  if (config.grpcEnabled && config.grpcTlsCertFile.empty() &&
+      !config.grpcAllowInsecure) {
+    throw std::runtime_error(
+        "gRPC requires TLS certificate/key files; set GRPC_ALLOW_INSECURE=true "
+        "only for trusted development networks");
+  }
+  if (config.grpcEnabled && !config.grpcTlsCertFile.empty() &&
+      config.grpcAllowInsecure) {
+    throw std::runtime_error(
+        "Choose TLS or GRPC_ALLOW_INSECURE, not both");
+  }
   config.redisEnabled = flag(values, "REDIS_ENABLED", false);
   config.redisHost = values.count("REDIS_HOST") ? values.at("REDIS_HOST") : "127.0.0.1";
   config.redisPort = number(values, "REDIS_PORT", 6379);
@@ -195,6 +238,10 @@ AppConfig AppConfig::load(const std::filesystem::path& envFile) {
                           "OBSERVABILITY_CIRCUIT_FAILURE_THRESHOLD",
                           "OBSERVABILITY_CIRCUIT_OPEN_SECONDS",
                           "HTTP_PORT", "GRPC_ENABLED", "GRPC_HOST", "GRPC_PORT",
+                          "GRPC_TLS_CERT_FILE", "GRPC_TLS_KEY_FILE",
+                          "GRPC_ALLOW_INSECURE",
+                          "GRPC_MAX_RECEIVE_MESSAGE_BYTES",
+                          "GRPC_MAX_SEND_MESSAGE_BYTES",
                           "HTTP_IDLE_CONNECTION_TIMEOUT_SECONDS",
                           "RATE_LIMIT_REQUESTS", "RATE_LIMIT_WINDOW_SECONDS",
                           "DB_CONNECTION_POOL_SIZE", "DB_QUERY_TIMEOUT_SECONDS",

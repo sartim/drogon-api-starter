@@ -1,9 +1,12 @@
 #include "user.grpc.pb.h"
+#include "health.grpc.pb.h"
 
 #include <grpcpp/grpcpp.h>
 
 #include <chrono>
+#include <fstream>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <string>
 
@@ -62,18 +65,45 @@ bool requestMissingUser(
   }
   return true;
 }
+
+bool checkHealth(
+    const std::shared_ptr<grpc::Channel>& channel) {
+  auto stub = drogon::api::v1::Health::NewStub(channel);
+  grpc::ClientContext context;
+  context.set_deadline(std::chrono::system_clock::now() +
+                       std::chrono::seconds(5));
+  drogon::api::v1::HealthCheckRequest request;
+  drogon::api::v1::HealthCheckResponse response;
+  const auto status = stub->Check(&context, request, &response);
+  if (!status.ok() ||
+      response.status() !=
+          drogon::api::v1::HealthCheckResponse::SERVING) {
+    std::cerr << "TLS gRPC health check failed: " << status.error_code()
+              << " " << status.error_message() << '\n';
+    return false;
+  }
+  return true;
+}
 }  // namespace
 
 int main(int argc, char* argv[]) {
-  if (argc != 5) {
+  if (argc != 6) {
     std::cerr << "Usage: grpc_integration_client <address> <user-id> "
-                 "<bearer-token> <expected-email>\n";
+                 "<bearer-token> <expected-email> <root-cert-file>\n";
     return 2;
   }
-  auto channel =
-      grpc::CreateChannel(argv[1], grpc::InsecureChannelCredentials());
+  std::ifstream certFile(argv[5], std::ios::binary);
+  if (!certFile.is_open()) {
+    std::cerr << "Unable to open gRPC root certificate\n";
+    return 2;
+  }
+  grpc::SslCredentialsOptions tlsOptions;
+  tlsOptions.pem_root_certs.assign(std::istreambuf_iterator<char>(certFile),
+                                   std::istreambuf_iterator<char>());
+  auto channel = grpc::CreateChannel(argv[1], grpc::SslCredentials(tlsOptions));
   auto stub = drogon::api::v1::UserDirectory::NewStub(channel);
-  if (!requestUser(stub, argv[2], argv[3], argv[4]) ||
+  if (!checkHealth(channel) ||
+      !requestUser(stub, argv[2], argv[3], argv[4]) ||
       !requestUser(stub, argv[2], "", "") ||
       !requestMissingUser(stub, argv[3])) {
     return 1;

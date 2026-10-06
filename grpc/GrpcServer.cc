@@ -12,6 +12,8 @@
 
 #include <grpcpp/grpcpp.h>
 #include <exception>
+#include <fstream>
+#include <iterator>
 #include <utility>
 
 namespace grpc_adapter {
@@ -92,13 +94,36 @@ GrpcServer::GrpcServer(std::string secretKey)
 
 GrpcServer::~GrpcServer() { stop(); }
 
-bool GrpcServer::start(const std::string& address) {
+bool GrpcServer::start(const std::string& address,
+                       const StartOptions& options) {
   if (server_) return false;
+
+  std::shared_ptr<grpc::ServerCredentials> credentials;
+  if (!options.tlsCertFile.empty() && !options.tlsKeyFile.empty()) {
+    std::ifstream certFile(options.tlsCertFile, std::ios::binary);
+    std::ifstream keyFile(options.tlsKeyFile, std::ios::binary);
+    if (!certFile.is_open() || !keyFile.is_open()) return false;
+
+    const std::string cert((std::istreambuf_iterator<char>(certFile)),
+                           std::istreambuf_iterator<char>());
+    const std::string key((std::istreambuf_iterator<char>(keyFile)),
+                          std::istreambuf_iterator<char>());
+    if (cert.empty() || key.empty()) return false;
+
+    grpc::SslServerCredentialsOptions tlsOptions;
+    tlsOptions.pem_key_cert_pairs.push_back({key, cert});
+    credentials = grpc::SslServerCredentials(tlsOptions);
+  } else if (options.allowInsecure) {
+    credentials = grpc::InsecureServerCredentials();
+  } else {
+    return false;
+  }
 
   grpc::ServerBuilder builder;
   int selectedPort = 0;
-  builder.AddListeningPort(address, grpc::InsecureServerCredentials(),
-                           &selectedPort);
+  builder.SetMaxReceiveMessageSize(options.maxReceiveMessageBytes);
+  builder.SetMaxSendMessageSize(options.maxSendMessageBytes);
+  builder.AddListeningPort(address, std::move(credentials), &selectedPort);
   builder.RegisterService(healthService_.get());
 #ifdef ENABLE_USER_SERVICE
   if (userDirectoryService_) {

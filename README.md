@@ -101,17 +101,42 @@ exposes the authenticated `UserDirectory.GetUser` RPC, using the same
 
     $ cmake --preset user-service -DENABLE_GRPC=ON
     $ cmake --build --preset user-service
-    $ GRPC_ENABLED=true GRPC_PORT=9000 ./build/user-service/drogon_user_service --action=run-server
+    $ mkdir -p .local/grpc-tls
+    $ openssl req -x509 -newkey rsa:2048 -nodes -days 30 \
+        -keyout .local/grpc-tls/server.key -out .local/grpc-tls/server.crt \
+        -subj '/CN=127.0.0.1' -addext 'subjectAltName=IP:127.0.0.1'
+    $ GRPC_ENABLED=true GRPC_TLS_CERT_FILE="$PWD/.local/grpc-tls/server.crt" \
+        GRPC_TLS_KEY_FILE="$PWD/.local/grpc-tls/server.key" \
+        GRPC_PORT=9000 ./build/user-service/drogon_user_service --action=run-server
 
 The adapter listens on a separate port (`GRPC_PORT`, default `9000`). Set
-`GRPC_ENABLED=true` to start it. `UserDirectory.GetUser` requires the same
+`GRPC_ENABLED=true` and provide both TLS file paths to start it. TLS is required
+by default. Plaintext is available only with the explicit
+`GRPC_ALLOW_INSECURE=true` development setting; never use that mode across an
+untrusted network. Receive and send payloads are each capped at 4 MiB by
+default, configurable up to 64 MiB. `docker-compose.grpc.yaml` is an optional
+overlay for mounting certificates into the web container; point
+`GRPC_TLS_DIR` at a directory containing `server.crt` and `server.key`.
+For a local Compose run, create a development certificate and start both
+Compose files explicitly:
+
+```bash
+mkdir -p .local/grpc-tls
+openssl req -x509 -newkey rsa:2048 -nodes -days 30 \
+  -keyout .local/grpc-tls/server.key \
+  -out .local/grpc-tls/server.crt \
+  -subj '/CN=127.0.0.1' -addext 'subjectAltName=IP:127.0.0.1'
+COMPOSE_FILE=docker-compose.yaml:docker-compose.grpc.yaml \
+GRPC_TLS_DIR="$PWD/.local/grpc-tls" ENABLE_GRPC=ON GRPC_ENABLED=true \
+  docker compose up --build
+```
+
+`UserDirectory.GetUser` requires the same
 `authorization: Bearer <JWT>` credential as the REST user API and returns only
 the public user fields. CI runs the RPC against its disposable PostgreSQL
-fixture and verifies that unauthenticated requests are rejected. REST remains
+fixture over TLS and verifies health, authenticated lookup, missing-user
+mapping, and unauthenticated rejection. REST remains
 the default public API; gRPC is an opt-in internal/service-to-service adapter.
-The current server uses insecure gRPC transport credentials; keep it on a
-trusted private network and do not expose the port to untrusted networks until
-TLS support is added.
 
 This repository follows a batteries-included profile model. The default
 `minimal` profile provides the Drogon platform foundation; the optional

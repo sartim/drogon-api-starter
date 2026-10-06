@@ -9,6 +9,9 @@ jobs:
   docker:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    env:
+      COMPOSE_FILE: docker-compose.yaml:docker-compose.grpc.yaml
+      GRPC_TLS_DIR: ${{ github.workspace }}/.ci/tls
 
     steps:
       - name: Check out repository
@@ -41,6 +44,16 @@ jobs:
         run: >-
           docker build --build-arg ENABLE_USER_SERVICE=ON
           --build-arg ENABLE_GRPC=ON --tag user-service:ci-grpc .
+
+      - name: Create temporary gRPC test certificate
+        run: |
+          mkdir -p "$GRPC_TLS_DIR"
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -keyout "$GRPC_TLS_DIR/server.key" \
+            -out "$GRPC_TLS_DIR/server.crt" \
+            -subj '/CN=127.0.0.1' \
+            -addext 'subjectAltName=IP:127.0.0.1'
+          chmod 644 "$GRPC_TLS_DIR/server.key"
 
       - name: Verify Compose defaults to user-service profile
         run: |
