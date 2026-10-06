@@ -1,6 +1,7 @@
 #include "grpc/GrpcServer.h"
 
 #include "health.grpc.pb.h"
+#include "observability/ErrorReporter.h"
 #include "observability/Observability.h"
 #ifdef ENABLE_USER_SERVICE
 #include "user.grpc.pb.h"
