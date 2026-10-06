@@ -95,16 +95,23 @@ profiles without becoming mandatory dependencies of the minimal build.
 
 The optional gRPC adapter is disabled by default. To build and run its
 versioned health contract, install the gRPC C++ and protobuf development
-packages, configure with `-DENABLE_GRPC=ON`, and set these environment values:
+packages and configure with `-DENABLE_GRPC=ON`. The `user-service` profile also
+exposes the authenticated `UserDirectory.GetUser` RPC, using the same
+`UserService` and JWT verifier as REST:
 
     $ cmake --preset user-service -DENABLE_GRPC=ON
     $ cmake --build --preset user-service
     $ GRPC_ENABLED=true GRPC_PORT=9000 ./build/user-service/drogon_user_service --action=run-server
 
-The adapter listens on a separate port and currently exposes the baseline
-health RPC. REST remains the public API; application-service RPCs will be
-added only after their authentication, deadlines, and shared-service mapping
-are defined.
+The adapter listens on a separate port (`GRPC_PORT`, default `9000`). Set
+`GRPC_ENABLED=true` to start it. `UserDirectory.GetUser` requires the same
+`authorization: Bearer <JWT>` credential as the REST user API and returns only
+the public user fields. CI runs the RPC against its disposable PostgreSQL
+fixture and verifies that unauthenticated requests are rejected. REST remains
+the default public API; gRPC is an opt-in internal/service-to-service adapter.
+The current server uses insecure gRPC transport credentials; keep it on a
+trusted private network and do not expose the port to untrusted networks until
+TLS support is added.
 
 This repository follows a batteries-included profile model. The default
 `minimal` profile provides the Drogon platform foundation; the optional

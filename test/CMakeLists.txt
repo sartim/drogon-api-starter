@@ -3,6 +3,12 @@ if (ENABLE_USER_SERVICE)
     set(PLATFORM_TEST_SOURCES test_main.cc
         ${CMAKE_SOURCE_DIR}/schemas/AuthSchema.cc)
 endif ()
+
+if (ENABLE_GRPC AND ENABLE_USER_SERVICE)
+    add_executable(grpc_integration_client grpc_integration_client.cc)
+    target_link_libraries(grpc_integration_client PRIVATE
+                          grpc_contract gRPC::grpc++)
+endif ()
 add_executable(drogon_user_service_test ${PLATFORM_TEST_SOURCES})
 
 target_include_directories(drogon_user_service_test

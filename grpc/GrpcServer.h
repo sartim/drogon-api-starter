@@ -12,7 +12,7 @@ namespace grpc_adapter {
 
 class GrpcServer {
  public:
-  GrpcServer();
+  explicit GrpcServer(std::string secretKey = {});
   ~GrpcServer();
 
   GrpcServer(const GrpcServer&) = delete;
@@ -23,7 +23,13 @@ class GrpcServer {
 
  private:
   class HealthService;
+#ifdef ENABLE_USER_SERVICE
+  class UserDirectoryService;
+#endif
   std::unique_ptr<HealthService> healthService_;
+#ifdef ENABLE_USER_SERVICE
+  std::unique_ptr<UserDirectoryService> userDirectoryService_;
+#endif
   std::unique_ptr<grpc::Server> server_;
   std::thread waitThread_;
 };

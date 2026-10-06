@@ -105,6 +105,7 @@ if (ENABLE_GRPC)
     find_package(gRPC CONFIG REQUIRED)
 
     set(GRPC_PROTO_FILE "${CMAKE_CURRENT_SOURCE_DIR}/grpc/proto/health.proto")
+    set(GRPC_PROTO_FILES "${GRPC_PROTO_FILE}")
     set(GRPC_GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/grpc")
     set(GRPC_GENERATED_SOURCES
         "${GRPC_GENERATED_DIR}/health.pb.cc"
@@ -112,6 +113,17 @@ if (ENABLE_GRPC)
     set(GRPC_GENERATED_HEADERS
         "${GRPC_GENERATED_DIR}/health.pb.h"
         "${GRPC_GENERATED_DIR}/health.grpc.pb.h")
+
+    if (ENABLE_USER_SERVICE)
+        list(APPEND GRPC_PROTO_FILES
+             "${CMAKE_CURRENT_SOURCE_DIR}/grpc/proto/user.proto")
+        list(APPEND GRPC_GENERATED_SOURCES
+             "${GRPC_GENERATED_DIR}/user.pb.cc"
+             "${GRPC_GENERATED_DIR}/user.grpc.pb.cc")
+        list(APPEND GRPC_GENERATED_HEADERS
+             "${GRPC_GENERATED_DIR}/user.pb.h"
+             "${GRPC_GENERATED_DIR}/user.grpc.pb.h")
+    endif ()
 
     add_custom_command(
         OUTPUT ${GRPC_GENERATED_SOURCES} ${GRPC_GENERATED_HEADERS}
@@ -121,8 +133,8 @@ if (ENABLE_GRPC)
                 "--cpp_out=${GRPC_GENERATED_DIR}"
                 "--grpc_out=${GRPC_GENERATED_DIR}"
                 --plugin=protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>
-                "${GRPC_PROTO_FILE}"
-        DEPENDS ${GRPC_PROTO_FILE}
+                ${GRPC_PROTO_FILES}
+        DEPENDS ${GRPC_PROTO_FILES}
         VERBATIM)
 
     add_library(grpc_contract STATIC ${GRPC_GENERATED_SOURCES})

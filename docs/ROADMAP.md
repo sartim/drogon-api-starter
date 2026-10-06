@@ -91,12 +91,20 @@ is available when a developer wants only the platform foundation.
       build time when gRPC is enabled.
 - [x] Implement a separate gRPC health adapter on a dedicated configurable port
       with graceful shutdown.
-- [ ] Implement separate gRPC server/client adapters on a dedicated port.
-- [ ] Route REST and gRPC adapters through the same application services.
-- [ ] Share authentication, request IDs, tracing, metrics, deadlines, and
-      cancellation rules.
-- [ ] Add gRPC health, integration tests, TLS, message limits, and deployment
-      configuration only when enabled.
+- [x] Add an authenticated, read-only `UserDirectory.GetUser` RPC in the
+      user-service profile, reusing the REST `UserService` and JWT verifier.
+- [x] Exercise the optional RPC in hosted CI against the disposable database
+      fixture, including authenticated success and unauthenticated rejection.
+- [ ] Implement reusable client adapters and map the remaining user/RBAC
+      operations through shared application services.
+- [ ] Share request IDs, tracing, metrics, deadlines, and cancellation rules
+      across both transports; define a bounded asynchronous database strategy
+      before increasing gRPC concurrency.
+- [x] Add hosted gRPC integration checks for user lookup, authentication
+      rejection, and missing-user status mapping.
+- [ ] Add TLS, message limits, and deployment configuration only when the
+      optional adapter is enabled; until then, document private-network-only
+      use of its insecure transport.
 
 ## Engineering principles
 

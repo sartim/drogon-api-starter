@@ -1,8 +1,18 @@
 #include "grpc/GrpcServer.h"
 
 #include "health.grpc.pb.h"
+#ifdef ENABLE_USER_SERVICE
+#include "user.grpc.pb.h"
+
+#include <drogon/HttpAppFramework.h>
+
+#include "helpers/AuthToken.h"
+#include "services/UserService.h"
+#endif
 
 #include <grpcpp/grpcpp.h>
+#include <exception>
+#include <utility>
 
 namespace grpc_adapter {
 
@@ -16,7 +26,68 @@ class GrpcServer::HealthService final : public drogon::api::v1::Health::Service 
   }
 };
 
-GrpcServer::GrpcServer() : healthService_(std::make_unique<HealthService>()) {}
+class GrpcServer::UserDirectoryService final
+    : public drogon::api::v1::UserDirectory::Service {
+ public:
+  explicit UserDirectoryService(std::string secretKey)
+      : secretKey_(std::move(secretKey)) {}
+
+  grpc::Status GetUser(grpc::ServerContext* context,
+                       const drogon::api::v1::GetUserRequest* request,
+                       drogon::api::v1::User* response) override {
+    if (context->IsCancelled()) {
+      return {grpc::StatusCode::CANCELLED, "Request was cancelled"};
+    }
+
+    const auto authorization = context->client_metadata().find("authorization");
+    if (authorization == context->client_metadata().end() ||
+        !verifyJWT(secretKey_, std::string(authorization->second.data(),
+                                          authorization->second.length()))) {
+      return {grpc::StatusCode::UNAUTHENTICATED,
+              "A valid bearer token is required"};
+    }
+
+    try {
+      const auto client = drogon::app().getDbClient();
+      if (!client) {
+        return {grpc::StatusCode::UNAVAILABLE,
+                "The user service is not available"};
+      }
+
+      services::UserService userService(client);
+      const auto user = userService.findById(request->user_id());
+      if (!user) {
+        return {grpc::StatusCode::NOT_FOUND, "User was not found"};
+      }
+
+      const auto publicUser = services::UserService::toPublicJson(*user);
+      response->set_id(publicUser["id"].asString());
+      response->set_first_name(publicUser["first_name"].asString());
+      response->set_last_name(publicUser["last_name"].asString());
+      response->set_email(publicUser["email"].asString());
+      response->set_created_at(publicUser["created_at"].asString());
+      response->set_updated_at(publicUser["updated_at"].asString());
+      return grpc::Status::OK;
+    } catch (const std::exception&) {
+      return {grpc::StatusCode::INTERNAL,
+              "Unable to retrieve the requested user"};
+    }
+  }
+
+ private:
+  const std::string secretKey_;
+};
+#endif
+
+GrpcServer::GrpcServer(std::string secretKey)
+    : healthService_(std::make_unique<HealthService>()) {
+#ifdef ENABLE_USER_SERVICE
+  userDirectoryService_ =
+      std::make_unique<UserDirectoryService>(std::move(secretKey));
+#else
+  (void)secretKey;
+#endif
+}
 
 GrpcServer::~GrpcServer() { stop(); }
 
@@ -28,6 +99,11 @@ bool GrpcServer::start(const std::string& address) {
   builder.AddListeningPort(address, grpc::InsecureServerCredentials(),
                            &selectedPort);
   builder.RegisterService(healthService_.get());
+#ifdef ENABLE_USER_SERVICE
+  if (userDirectoryService_) {
+    builder.RegisterService(userDirectoryService_.get());
+  }
+#endif
   server_ = builder.BuildAndStart();
   if (!server_ || selectedPort == 0) {
     server_.reset();
