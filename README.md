@@ -137,7 +137,8 @@ the public user fields. Both gRPC methods accept `x-request-id` and W3C
 `traceparent` metadata, return normalized correlation metadata, and emit
 correlated structured logs. The existing `/metrics` endpoint exposes aggregate
 `grpc_server_requests_total` and `grpc_server_errors_total` counters. This
-propagates trace context but does not create or export OpenTelemetry spans.
+propagates trace context but does not create or export OpenTelemetry spans;
+OTLP error-event export is separate from OTLP trace export.
 CI runs the RPC against its disposable PostgreSQL fixture over TLS and verifies
 health, authenticated lookup, correlation metadata, metrics, missing-user
 mapping, and unauthenticated rejection. REST remains
@@ -350,8 +351,10 @@ start/completion logs include the ID, method, path, and response status, which
 provides a lightweight trace across application logs.
 
 The service also accepts and returns the standard W3C `traceparent` header.
-This propagates distributed trace context without requiring an APM SDK in the
-baseline build; OpenTelemetry or vendor adapters can consume it later.
+This propagates and correlates distributed trace context without requiring an
+APM SDK in the baseline build. It does not create spans or export the OTLP
+traces signal. The OTLP error-reporting adapter described below sends error
+events; it is not a tracing exporter.
 
 Error tracking is provider-neutral and fail-open. The application depends on
 the `ErrorReporter` interface, while provider SDKs remain optional adapters.
@@ -383,6 +386,12 @@ endpoint, for example:
 Use `OBSERVABILITY_TIMEOUT_SECONDS` to bound delivery attempts. Invalid
 configuration and failed delivery fall back to no-op behavior and never block
 request handling.
+
+Planned observability follow-up: add optional OpenTelemetry C++ SDK support,
+create HTTP and gRPC spans with parent-context propagation and status/error
+attributes, and export traces through OTLP. Keep the SDK opt-in, retain a
+working no-SDK build, and test span delivery and exporter failure against a
+mock collector in CI. See the [roadmap](docs/ROADMAP.md) for the tracked work.
 
 Events are buffered briefly and delivered in bounded batches. Tune
 `OBSERVABILITY_BATCH_SIZE` and `OBSERVABILITY_BATCH_DELAY_SECONDS` for the

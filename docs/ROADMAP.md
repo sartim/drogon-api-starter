@@ -104,7 +104,20 @@ is available when a developer wants only the platform foundation.
       include correlation fields in RPC logs, and export bounded-cardinality
       gRPC request/error counters through the existing Prometheus endpoint.
 - [ ] Add span creation/export when a supported OpenTelemetry C++ SDK is
-      selected; define deadlines and cancellation rules across both transports.
+      selected. Follow-up acceptance criteria:
+  - [ ] Select and pin a supported SDK/exporter version; keep tracing optional
+        and preserve the baseline build without the SDK.
+  - [ ] Create HTTP and gRPC server spans, continue valid W3C parent context,
+        and record bounded method/status/error attributes without secrets or
+        high-cardinality user data.
+  - [ ] Export the OTLP traces signal with bounded timeouts and fail-open
+        behavior; do not conflate it with the existing OTLP error-event/log
+        adapter.
+  - [ ] Verify exported spans and exporter failure with a mock collector in
+        hosted CI, including successful no-SDK startup/build coverage.
+  - [ ] Document optional SDK setup, trace endpoint configuration, sampling,
+        and the distinction between correlation, spans, and error reporting.
+- [ ] Define gRPC deadlines and cancellation behavior across both transports.
 - [ ] Define a bounded asynchronous database strategy before increasing gRPC
       concurrency.
 - [x] Add hosted gRPC integration checks for user lookup, authentication
