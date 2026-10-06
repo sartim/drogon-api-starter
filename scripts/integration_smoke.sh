@@ -40,6 +40,9 @@ request_status 201 "${base_url}/api/v1/user" \
   --data "{\"first_name\":\"Integration\",\"last_name\":\"Test\",\"email\":\"${created_email}\",\"password\":\"created-password\"}"
 created_id="$(jq --raw-output --exit-status '.id' "$response_file")"
 
+request_status 404 "${base_url}/api/v1/user/00000000-0000-0000-0000-000000000000" \
+  --header "Authorization: Bearer ${token}"
+
 if [[ -n "${GRPC_CLIENT_IMAGE:-}" ]]; then
   docker run --rm --network container:user_service \
     "$GRPC_CLIENT_IMAGE" /src/build/user-service/test/grpc_integration_client \
