@@ -133,8 +133,13 @@ GRPC_TLS_DIR="$PWD/.local/grpc-tls" ENABLE_GRPC=ON GRPC_ENABLED=true \
 
 `UserDirectory.GetUser` requires the same
 `authorization: Bearer <JWT>` credential as the REST user API and returns only
-the public user fields. CI runs the RPC against its disposable PostgreSQL
-fixture over TLS and verifies health, authenticated lookup, missing-user
+the public user fields. Both gRPC methods accept `x-request-id` and W3C
+`traceparent` metadata, return normalized correlation metadata, and emit
+correlated structured logs. The existing `/metrics` endpoint exposes aggregate
+`grpc_server_requests_total` and `grpc_server_errors_total` counters. This
+propagates trace context but does not create or export OpenTelemetry spans.
+CI runs the RPC against its disposable PostgreSQL fixture over TLS and verifies
+health, authenticated lookup, correlation metadata, metrics, missing-user
 mapping, and unauthenticated rejection. REST remains
 the default public API; gRPC is an opt-in internal/service-to-service adapter.
 

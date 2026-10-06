@@ -49,6 +49,12 @@ if [[ -n "${GRPC_CLIENT_IMAGE:-}" ]]; then
     "$GRPC_CLIENT_IMAGE" /src/build/user-service/test/grpc_integration_client \
     "127.0.0.1:${GRPC_PORT:-9000}" "$created_id" "$token" "$created_email" \
     /run/grpc-tls/server.crt
+
+  request_status 200 "${base_url}/metrics"
+  grep --extended-regexp --quiet '^grpc_server_requests_total [1-9][0-9]*$' \
+    "$response_file"
+  grep --extended-regexp --quiet '^grpc_server_errors_total [1-9][0-9]*$' \
+    "$response_file"
 fi
 
 request_status 200 "${base_url}/api/v1/user?page=1&page_size=10" \

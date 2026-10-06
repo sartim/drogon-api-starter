@@ -1,8 +1,8 @@
 #include "Observability.h"
 #include "ErrorReporter.h"
 
-#include <cstdlib>
 #include <cctype>
+#include <cstdlib>
 #include <drogon/drogon.h>
 #include <iomanip>
 #include <random>
@@ -35,6 +35,20 @@ bool validHex(const std::string& value) {
   }
   return true;
 }
+
+bool validRequestId(const std::string& value) {
+  if (value.empty() || value.size() > 128) return false;
+  for (const auto character : value) {
+    const bool alphaNumeric = (character >= 'a' && character <= 'z') ||
+                              (character >= 'A' && character <= 'Z') ||
+                              (character >= '0' && character <= '9');
+    if (!alphaNumeric && character != '-' && character != '_' &&
+        character != '.') {
+      return false;
+    }
+  }
+  return true;
+}
 } // namespace
 
 Metrics& metrics() {
@@ -47,8 +61,7 @@ std::string requestId(const drogon::HttpRequestPtr& request) {
     return request->attributes()->get<std::string>(kRequestId);
   }
 
-  const auto supplied = request->getHeader("X-Request-ID");
-  const auto id = supplied.empty() ? generateRequestId() : supplied;
+  const auto id = normalizeRequestId(request->getHeader("X-Request-ID"));
   request->attributes()->insert(kRequestId, id);
   return id;
 }
@@ -58,7 +71,16 @@ std::string traceparent(const drogon::HttpRequestPtr& request) {
     return request->attributes()->get<std::string>(kTraceparent);
   }
 
-  const auto supplied = request->getHeader("traceparent");
+  const auto context = normalizeTraceparent(request->getHeader("traceparent"));
+  request->attributes()->insert(kTraceparent, context);
+  return context;
+}
+
+std::string normalizeRequestId(const std::string& supplied) {
+  return validRequestId(supplied) ? supplied : generateRequestId();
+}
+
+std::string normalizeTraceparent(const std::string& supplied) {
   std::string context;
   if (supplied.size() == 55 && supplied[2] == '-' && supplied[35] == '-' &&
       supplied[52] == '-' && validHex(supplied.substr(0, 2)) &&
@@ -68,7 +90,6 @@ std::string traceparent(const drogon::HttpRequestPtr& request) {
   } else {
     context = "00-" + randomHex(32) + "-" + randomHex(16) + "-01";
   }
-  request->attributes()->insert(kTraceparent, context);
   return context;
 }
 
@@ -85,6 +106,11 @@ void Metrics::recordResponse(const drogon::HttpRequestPtr& request,
   if (response && response->statusCode() >= drogon::k500InternalServerError) {
     ++errors_;
   }
+}
+
+void Metrics::recordGrpcResponse(const bool successful) {
+  ++grpcRequests_;
+  if (!successful) ++grpcErrors_;
 }
 
 void Metrics::recordObservabilityQueued() { ++observabilityQueued_; }
@@ -113,6 +139,12 @@ std::string Metrics::prometheus() const {
          << "# HELP http_errors_total Total HTTP 5xx responses.\n"
          << "# TYPE http_errors_total counter\n"
          << "http_errors_total " << errors_.load() << "\n"
+         << "# HELP grpc_server_requests_total Total gRPC requests received.\n"
+         << "# TYPE grpc_server_requests_total counter\n"
+         << "grpc_server_requests_total " << grpcRequests_.load() << "\n"
+         << "# HELP grpc_server_errors_total Total non-OK gRPC responses.\n"
+         << "# TYPE grpc_server_errors_total counter\n"
+         << "grpc_server_errors_total " << grpcErrors_.load() << "\n"
          << "# HELP observability_events_queued_total Events accepted by the observability queue.\n"
          << "# TYPE observability_events_queued_total counter\n"
          << "observability_events_queued_total " << observabilityQueued_.load() << "\n"

@@ -100,9 +100,13 @@ is available when a developer wants only the platform foundation.
 - [x] Bound gRPC send and receive message sizes (4 MiB default, 64 MiB maximum).
 - [ ] Implement reusable client adapters and map the remaining user/RBAC
       operations through shared application services.
-- [ ] Share request IDs, tracing, metrics, deadlines, and cancellation rules
-      across both transports; define a bounded asynchronous database strategy
-      before increasing gRPC concurrency.
+- [x] Propagate sanitized request IDs and W3C trace context through gRPC,
+      include correlation fields in RPC logs, and export bounded-cardinality
+      gRPC request/error counters through the existing Prometheus endpoint.
+- [ ] Add span creation/export when a supported OpenTelemetry C++ SDK is
+      selected; define deadlines and cancellation rules across both transports.
+- [ ] Define a bounded asynchronous database strategy before increasing gRPC
+      concurrency.
 - [x] Add hosted gRPC integration checks for user lookup, authentication
       rejection, and missing-user status mapping.
 - [ ] Add production deployment configuration and client TLS policy only when

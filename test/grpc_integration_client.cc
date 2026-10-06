@@ -9,8 +9,27 @@
 #include <iterator>
 #include <memory>
 #include <string>
+#include <string_view>
 
 namespace {
+constexpr std::string_view kRequestId = "grpc-integration-request";
+constexpr std::string_view kTraceparent =
+    "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01";
+
+bool hasTrailingMetadata(const grpc::ClientContext& context,
+                         const std::string_view name,
+                         const std::string_view expected) {
+  for (const auto& [key, value] : context.GetServerTrailingMetadata()) {
+    if (std::string_view(key.data(), key.length()) == name &&
+        std::string_view(value.data(), value.length()) == expected) {
+      return true;
+    }
+  }
+  std::cerr << "Expected gRPC trailing metadata was not returned: " << name
+            << '\n';
+  return false;
+}
+
 bool requestUser(
     const std::unique_ptr<drogon::api::v1::UserDirectory::Stub>& stub,
     const std::string& userId, const std::string& token,
@@ -18,6 +37,8 @@ bool requestUser(
   grpc::ClientContext context;
   context.set_deadline(std::chrono::system_clock::now() +
                        std::chrono::seconds(5));
+  context.AddMetadata("x-request-id", std::string(kRequestId));
+  context.AddMetadata("traceparent", std::string(kTraceparent));
   if (!token.empty()) context.AddMetadata("authorization", "Bearer " + token);
 
   drogon::api::v1::GetUserRequest request;
@@ -31,7 +52,8 @@ bool requestUser(
                 << '\n';
       return false;
     }
-    return true;
+    return hasTrailingMetadata(context, "x-request-id", kRequestId) &&
+           hasTrailingMetadata(context, "traceparent", kTraceparent);
   }
   if (!status.ok()) {
     std::cerr << "Authenticated GetUser failed: " << status.error_code()
@@ -44,7 +66,8 @@ bool requestUser(
     std::cerr << "GetUser returned an incomplete or unexpected public user\n";
     return false;
   }
-  return true;
+  return hasTrailingMetadata(context, "x-request-id", kRequestId) &&
+         hasTrailingMetadata(context, "traceparent", kTraceparent);
 }
 
 bool requestMissingUser(
@@ -74,6 +97,8 @@ bool checkHealth(
                        std::chrono::seconds(5));
   drogon::api::v1::HealthCheckRequest request;
   drogon::api::v1::HealthCheckResponse response;
+  context.AddMetadata("x-request-id", std::string(kRequestId));
+  context.AddMetadata("traceparent", std::string(kTraceparent));
   const auto status = stub->Check(&context, request, &response);
   if (!status.ok() ||
       response.status() !=
@@ -82,7 +107,8 @@ bool checkHealth(
               << " " << status.error_message() << '\n';
     return false;
   }
-  return true;
+  return hasTrailingMetadata(context, "x-request-id", kRequestId) &&
+         hasTrailingMetadata(context, "traceparent", kTraceparent);
 }
 }  // namespace
 
