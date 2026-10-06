@@ -10,6 +10,9 @@
 #endif
 #include "observability/Observability.h"
 #include "observability/RateLimiter.h"
+#ifdef ENABLE_GRPC
+#include "grpc/GrpcServer.h"
+#endif
 #ifdef ENABLE_USER_SERVICE
 #include "tables/PermissionTable.h"
 #include "tables/RolePermissionTable.h"
@@ -220,6 +223,14 @@ void registerRoutes() {
 void dropTables() {}
 
 void runServer(const config::AppConfig &appConfig) {
+#ifdef ENABLE_GRPC
+  grpc_adapter::GrpcServer grpcServer;
+  if (appConfig.grpcEnabled &&
+      !grpcServer.start(appConfig.grpcHost + ":" +
+                        std::to_string(appConfig.grpcPort))) {
+    throw std::runtime_error("Failed to start gRPC server");
+  }
+#endif
   observability::RateLimiter rateLimiter(
       static_cast<size_t>(appConfig.rateLimitRequests),
       std::chrono::seconds(appConfig.rateLimitWindowSeconds));
@@ -280,13 +291,19 @@ void runServer(const config::AppConfig &appConfig) {
   // Set HTTP listener address and port
   drogon::app().setIdleConnectionTimeout(
       static_cast<size_t>(appConfig.idleConnectionTimeoutSeconds));
-  drogon::app().setTermSignalHandler([] {
+  drogon::app().setTermSignalHandler([&] {
     LOG_INFO << "shutdown_requested signal=TERM";
+#ifdef ENABLE_GRPC
+    grpcServer.stop();
+#endif
     observability::flushErrorReporter();
     drogon::app().getLoop()->runAfter(0.25, [] { drogon::app().quit(); });
   });
-  drogon::app().setIntSignalHandler([] {
+  drogon::app().setIntSignalHandler([&] {
     LOG_INFO << "shutdown_requested signal=INT";
+#ifdef ENABLE_GRPC
+    grpcServer.stop();
+#endif
     observability::flushErrorReporter();
     drogon::app().getLoop()->runAfter(0.25, [] { drogon::app().quit(); });
   });

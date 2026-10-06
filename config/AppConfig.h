@@ -30,6 +30,9 @@ struct AppConfig {
   double observabilityCircuitOpenSeconds{30.0};
   std::string httpHost{"0.0.0.0"};
   int httpPort{8000};
+  bool grpcEnabled{false};
+  std::string grpcHost{"0.0.0.0"};
+  int grpcPort{9000};
   bool redisEnabled{false};
   std::string redisHost{"127.0.0.1"};
   int redisPort{6379};
