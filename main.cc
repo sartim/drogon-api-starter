@@ -224,12 +224,7 @@ void dropTables() {}
 
 void runServer(const config::AppConfig &appConfig) {
 #ifdef ENABLE_GRPC
-  grpc_adapter::GrpcServer grpcServer;
-  if (appConfig.grpcEnabled &&
-      !grpcServer.start(appConfig.grpcHost + ":" +
-                        std::to_string(appConfig.grpcPort))) {
-    throw std::runtime_error("Failed to start gRPC server");
-  }
+  grpc_adapter::GrpcServer grpcServer(appConfig.secretKey);
 #endif
   observability::RateLimiter rateLimiter(
       static_cast<size_t>(appConfig.rateLimitRequests),
@@ -320,6 +315,24 @@ void runServer(const config::AppConfig &appConfig) {
 
   // Register routes
   registerRoutes();
+
+#ifdef ENABLE_GRPC
+  if (appConfig.grpcEnabled) {
+    grpc_adapter::GrpcServer::StartOptions grpcOptions;
+    grpcOptions.tlsCertFile = appConfig.grpcTlsCertFile;
+    grpcOptions.tlsKeyFile = appConfig.grpcTlsKeyFile;
+    grpcOptions.allowInsecure = appConfig.grpcAllowInsecure;
+    grpcOptions.maxReceiveMessageBytes =
+        appConfig.grpcMaxReceiveMessageBytes;
+    grpcOptions.maxSendMessageBytes = appConfig.grpcMaxSendMessageBytes;
+    if (!grpcServer.start(appConfig.grpcHost + ":" +
+                              std::to_string(appConfig.grpcPort),
+                          grpcOptions)) {
+      throw std::runtime_error("Failed to start gRPC server; verify TLS files "
+                               "and gRPC listener settings");
+    }
+  }
+#endif
 
   // Run server
   LOG_INFO << "Server running on 127.0.0.1:" << port;

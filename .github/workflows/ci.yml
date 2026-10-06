@@ -9,6 +9,9 @@ jobs:
   docker:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    env:
+      COMPOSE_FILE: docker-compose.yaml:docker-compose.grpc.yaml
+      GRPC_TLS_DIR: ${{ github.workspace }}/.ci/tls
 
     steps:
       - name: Check out repository
@@ -33,7 +36,24 @@ jobs:
         run: docker build --build-arg ENABLE_USER_SERVICE=ON --tag user-service:ci-user .
 
       - name: Build optional gRPC profile
-        run: docker build --target build-env --build-arg ENABLE_GRPC=ON --tag user-service:ci-grpc .
+        run: >-
+          docker build --target build-env --build-arg ENABLE_GRPC=ON
+          --tag user-service:ci-grpc-builder .
+
+      - name: Build optional gRPC runtime profile
+        run: >-
+          docker build --build-arg ENABLE_USER_SERVICE=ON
+          --build-arg ENABLE_GRPC=ON --tag user-service:ci-grpc .
+
+      - name: Create temporary gRPC test certificate
+        run: |
+          mkdir -p "$GRPC_TLS_DIR"
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -keyout "$GRPC_TLS_DIR/server.key" \
+            -out "$GRPC_TLS_DIR/server.crt" \
+            -subj '/CN=127.0.0.1' \
+            -addext 'subjectAltName=IP:127.0.0.1'
+          chmod 644 "$GRPC_TLS_DIR/server.key"
 
       - name: Verify Compose defaults to user-service profile
         run: |
@@ -42,8 +62,9 @@ jobs:
 
       - name: Start integration stack
         run: |
-          docker tag user-service:ci-user user_service:latest
+          docker tag user-service:ci-grpc user_service:latest
           SECRET_KEY=ci-test-secret \
+            GRPC_ENABLED=true \
             DB_NAME=ci-test \
             DB_USER=ci-test \
             DB_PASSWORD= \
@@ -57,6 +78,8 @@ jobs:
             < test/fixtures/integration_user.sql
 
       - name: Run integration smoke tests
+        env:
+          GRPC_CLIENT_IMAGE: user-service:ci-grpc-builder
         run: ./scripts/integration_smoke.sh
 
       - name: Stop Redis and verify cache fallback

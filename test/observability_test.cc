@@ -29,6 +29,21 @@ public:
 }  // namespace
 
 int main() {
+  if (observability::normalizeRequestId("request-42.alpha") !=
+          "request-42.alpha" ||
+      observability::normalizeRequestId("bad id\n").size() != 16) {
+    std::cerr << "request ID normalization failed\n";
+    return 1;
+  }
+
+  const auto generatedTraceparent =
+      observability::normalizeTraceparent("not-a-traceparent");
+  if (generatedTraceparent.size() != 55 || generatedTraceparent[2] != '-' ||
+      generatedTraceparent[35] != '-' || generatedTraceparent[52] != '-') {
+    std::cerr << "invalid trace context was not replaced\n";
+    return 1;
+  }
+
   auto request = drogon::HttpRequest::newHttpRequest();
   request->addHeader("X-Request-ID", "test-request-id");
 
@@ -53,6 +68,8 @@ int main() {
     return 1;
   }
   observability::metrics().recordObservabilityQueued();
+  observability::metrics().recordGrpcResponse(true);
+  observability::metrics().recordGrpcResponse(false);
   observability::metrics().recordObservabilityDropped();
   observability::metrics().recordObservabilityBatch(2);
   const auto observabilityMetrics = observability::metrics().prometheus();
@@ -67,6 +84,10 @@ int main() {
       observabilityMetrics.find("observability_failures_total") ==
           std::string::npos ||
       observabilityMetrics.find("observability_circuit_open_total") ==
+          std::string::npos ||
+      observabilityMetrics.find("grpc_server_requests_total 2") ==
+          std::string::npos ||
+      observabilityMetrics.find("grpc_server_errors_total 1") ==
           std::string::npos) {
     std::cerr << "observability queue metrics are missing\n";
     return 1;

@@ -33,6 +33,11 @@ struct AppConfig {
   bool grpcEnabled{false};
   std::string grpcHost{"0.0.0.0"};
   int grpcPort{9000};
+  std::string grpcTlsCertFile;
+  std::string grpcTlsKeyFile;
+  bool grpcAllowInsecure{false};
+  int grpcMaxReceiveMessageBytes{4 * 1024 * 1024};
+  int grpcMaxSendMessageBytes{4 * 1024 * 1024};
   bool redisEnabled{false};
   std::string redisHost{"127.0.0.1"};
   int redisPort{6379};

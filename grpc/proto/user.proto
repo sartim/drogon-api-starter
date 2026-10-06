@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package drogon.api.v1;
+
+// Authenticated, read-only user lookup exposed only by the user-service
+// profile. The application intentionally returns a safe public projection.
+service UserDirectory {
+  rpc GetUser(GetUserRequest) returns (User);
+}
+
+message GetUserRequest {
+  string user_id = 1;
+}
+
+message User {
+  string id = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string email = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}

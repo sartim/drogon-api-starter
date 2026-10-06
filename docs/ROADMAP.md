@@ -91,12 +91,40 @@ is available when a developer wants only the platform foundation.
       build time when gRPC is enabled.
 - [x] Implement a separate gRPC health adapter on a dedicated configurable port
       with graceful shutdown.
-- [ ] Implement separate gRPC server/client adapters on a dedicated port.
-- [ ] Route REST and gRPC adapters through the same application services.
-- [ ] Share authentication, request IDs, tracing, metrics, deadlines, and
-      cancellation rules.
-- [ ] Add gRPC health, integration tests, TLS, message limits, and deployment
-      configuration only when enabled.
+- [x] Add an authenticated, read-only `UserDirectory.GetUser` RPC in the
+      user-service profile, reusing the REST `UserService` and JWT verifier.
+- [x] Exercise the optional RPC in hosted CI against the disposable database
+      fixture, including authenticated success and unauthenticated rejection.
+- [x] Require TLS when gRPC is enabled unless the developer explicitly opts in
+      to insecure local development; validate the TLS connection in hosted CI.
+- [x] Bound gRPC send and receive message sizes (4 MiB default, 64 MiB maximum).
+- [ ] Implement reusable client adapters and map the remaining user/RBAC
+      operations through shared application services.
+- [x] Propagate sanitized request IDs and W3C trace context through gRPC,
+      include correlation fields in RPC logs, and export bounded-cardinality
+      gRPC request/error counters through the existing Prometheus endpoint.
+- [ ] Add span creation/export when a supported OpenTelemetry C++ SDK is
+      selected. Follow-up acceptance criteria:
+  - [ ] Select and pin a supported SDK/exporter version; keep tracing optional
+        and preserve the baseline build without the SDK.
+  - [ ] Create HTTP and gRPC server spans, continue valid W3C parent context,
+        and record bounded method/status/error attributes without secrets or
+        high-cardinality user data.
+  - [ ] Export the OTLP traces signal with bounded timeouts and fail-open
+        behavior; do not conflate it with the existing OTLP error-event/log
+        adapter.
+  - [ ] Verify exported spans and exporter failure with a mock collector in
+        hosted CI, including successful no-SDK startup/build coverage.
+  - [ ] Document optional SDK setup, trace endpoint configuration, sampling,
+        and the distinction between correlation, spans, and error reporting.
+- [ ] Define gRPC deadlines and cancellation behavior across both transports.
+- [ ] Define a bounded asynchronous database strategy before increasing gRPC
+      concurrency.
+- [x] Add hosted gRPC integration checks for user lookup, authentication
+      rejection, and missing-user status mapping.
+- [ ] Add production deployment configuration and client TLS policy only when
+      the optional adapter is enabled; developers choose their deployment
+      platform and certificate management strategy.
 
 ## Engineering principles
 

@@ -1,0 +1,11 @@
+services:
+  web-server:
+    volumes:
+      - type: bind
+        source: ${GRPC_TLS_DIR:-./.local/grpc-tls}
+        target: /run/grpc-tls
+        read_only: true
+    environment:
+      - GRPC_TLS_CERT_FILE=/run/grpc-tls/server.crt
+      - GRPC_TLS_KEY_FILE=/run/grpc-tls/server.key
+      - GRPC_ALLOW_INSECURE=false

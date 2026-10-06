@@ -1,6 +1,7 @@
 #include "UserService.h"
 
 #include "bcrypt.h"
+#include <drogon/orm/Exception.h>
 #include <drogon/orm/Mapper.h>
 
 #include <utility>
@@ -28,11 +29,11 @@ UserService::listUsers(const pagination::PageRequest& request) const {
 std::optional<drogon_model::drogon_user_service::Users> UserService::findById(
     const std::string& id) const {
   drogon::orm::Mapper<drogon_model::drogon_user_service::Users> mapper(client_);
-  auto user = mapper.findByPrimaryKey(id);
-  if (!user.getId()) {
+  try {
+    return mapper.findByPrimaryKey(id);
+  } catch (const drogon::orm::UnexpectedRows&) {
     return std::nullopt;
   }
-  return user;
 }
 
 namespace {

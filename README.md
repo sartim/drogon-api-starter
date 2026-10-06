@@ -95,16 +95,54 @@ profiles without becoming mandatory dependencies of the minimal build.
 
 The optional gRPC adapter is disabled by default. To build and run its
 versioned health contract, install the gRPC C++ and protobuf development
-packages, configure with `-DENABLE_GRPC=ON`, and set these environment values:
+packages and configure with `-DENABLE_GRPC=ON`. The `user-service` profile also
+exposes the authenticated `UserDirectory.GetUser` RPC, using the same
+`UserService` and JWT verifier as REST:
 
     $ cmake --preset user-service -DENABLE_GRPC=ON
     $ cmake --build --preset user-service
-    $ GRPC_ENABLED=true GRPC_PORT=9000 ./build/user-service/drogon_user_service --action=run-server
+    $ mkdir -p .local/grpc-tls
+    $ openssl req -x509 -newkey rsa:2048 -nodes -days 30 \
+        -keyout .local/grpc-tls/server.key -out .local/grpc-tls/server.crt \
+        -subj '/CN=127.0.0.1' -addext 'subjectAltName=IP:127.0.0.1'
+    $ GRPC_ENABLED=true GRPC_TLS_CERT_FILE="$PWD/.local/grpc-tls/server.crt" \
+        GRPC_TLS_KEY_FILE="$PWD/.local/grpc-tls/server.key" \
+        GRPC_PORT=9000 ./build/user-service/drogon_user_service --action=run-server
 
-The adapter listens on a separate port and currently exposes the baseline
-health RPC. REST remains the public API; application-service RPCs will be
-added only after their authentication, deadlines, and shared-service mapping
-are defined.
+The adapter listens on a separate port (`GRPC_PORT`, default `9000`). Set
+`GRPC_ENABLED=true` and provide both TLS file paths to start it. TLS is required
+by default. Plaintext is available only with the explicit
+`GRPC_ALLOW_INSECURE=true` development setting; never use that mode across an
+untrusted network. Receive and send payloads are each capped at 4 MiB by
+default, configurable up to 64 MiB. `docker-compose.grpc.yaml` is an optional
+overlay for mounting certificates into the web container; point
+`GRPC_TLS_DIR` at a directory containing `server.crt` and `server.key`.
+For a local Compose run, create a development certificate and start both
+Compose files explicitly:
+
+```bash
+mkdir -p .local/grpc-tls
+openssl req -x509 -newkey rsa:2048 -nodes -days 30 \
+  -keyout .local/grpc-tls/server.key \
+  -out .local/grpc-tls/server.crt \
+  -subj '/CN=127.0.0.1' -addext 'subjectAltName=IP:127.0.0.1'
+COMPOSE_FILE=docker-compose.yaml:docker-compose.grpc.yaml \
+GRPC_TLS_DIR="$PWD/.local/grpc-tls" ENABLE_GRPC=ON GRPC_ENABLED=true \
+  docker compose up --build
+```
+
+`UserDirectory.GetUser` requires the same
+`authorization: Bearer <JWT>` credential as the REST user API and returns only
+the public user fields. Both gRPC methods accept `x-request-id` and W3C
+`traceparent` metadata, return normalized correlation metadata, and emit
+correlated structured logs. The existing `/metrics` endpoint exposes aggregate
+`grpc_server_requests_total` and `grpc_server_errors_total` counters. This
+propagates trace context but does not create or export OpenTelemetry spans;
+OTLP error-event export is separate from OTLP trace export.
+CI runs the RPC against its disposable PostgreSQL fixture over TLS and verifies
+health, authenticated lookup, correlation metadata, metrics, missing-user
+mapping, and unauthenticated rejection. REST remains
+the default public API; gRPC is an opt-in internal/service-to-service adapter.
 
 This repository follows a batteries-included profile model. The default
 `minimal` profile provides the Drogon platform foundation; the optional
@@ -313,8 +351,10 @@ start/completion logs include the ID, method, path, and response status, which
 provides a lightweight trace across application logs.
 
 The service also accepts and returns the standard W3C `traceparent` header.
-This propagates distributed trace context without requiring an APM SDK in the
-baseline build; OpenTelemetry or vendor adapters can consume it later.
+This propagates and correlates distributed trace context without requiring an
+APM SDK in the baseline build. It does not create spans or export the OTLP
+traces signal. The OTLP error-reporting adapter described below sends error
+events; it is not a tracing exporter.
 
 Error tracking is provider-neutral and fail-open. The application depends on
 the `ErrorReporter` interface, while provider SDKs remain optional adapters.
@@ -346,6 +386,12 @@ endpoint, for example:
 Use `OBSERVABILITY_TIMEOUT_SECONDS` to bound delivery attempts. Invalid
 configuration and failed delivery fall back to no-op behavior and never block
 request handling.
+
+Planned observability follow-up: add optional OpenTelemetry C++ SDK support,
+create HTTP and gRPC spans with parent-context propagation and status/error
+attributes, and export traces through OTLP. Keep the SDK opt-in, retain a
+working no-SDK build, and test span delivery and exporter failure against a
+mock collector in CI. See the [roadmap](docs/ROADMAP.md) for the tracked work.
 
 Events are buffered briefly and delivered in bounded batches. Tune
 `OBSERVABILITY_BATCH_SIZE` and `OBSERVABILITY_BATCH_DELAY_SECONDS` for the

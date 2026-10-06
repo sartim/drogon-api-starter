@@ -93,6 +93,7 @@ _deps
 CMakeUserPresets.json
 build/
 .local/
+.ci/tls/
 Bcrypt.cpp/
 drogon/
 jwt-cpp/
